@@ -41,10 +41,10 @@ public class SampleAxisState implements SampleAxisStatable
 	private boolean sampleValid = false;
 
 	// Get a local copy of the sample size
-	private int sampleSize = AccelerationActivity.getSampleSize();
+	private int sampleSize = AccelerationExplorerActivity.getSampleSize();
 
 	// Get a local copy of the thresholds
-	private double sampleThreshold = AccelerationActivity.getSampleThreshold();
+	private double sampleThreshold = AccelerationExplorerActivity.getSampleThreshold();
 	private double sampleGravityThresholdMax;
 	private double sampleGravityThresholdMin;
 
@@ -87,16 +87,16 @@ public class SampleAxisState implements SampleAxisStatable
 		// Setup the gravity thresholds
 		if (this.positiveAxis)
 		{
-			sampleGravityThresholdMax = AccelerationActivity
+			sampleGravityThresholdMax = AccelerationExplorerActivity
 					.getGravityThresholdMax();
-			sampleGravityThresholdMin = AccelerationActivity
+			sampleGravityThresholdMin = AccelerationExplorerActivity
 					.getGravityThresholdMin();
 		}
 		else
 		{
-			sampleGravityThresholdMax = -AccelerationActivity
+			sampleGravityThresholdMax = -AccelerationExplorerActivity
 					.getGravityThresholdMin();
-			sampleGravityThresholdMin = -AccelerationActivity
+			sampleGravityThresholdMin = -AccelerationExplorerActivity
 					.getGravityThresholdMax();
 		}
 

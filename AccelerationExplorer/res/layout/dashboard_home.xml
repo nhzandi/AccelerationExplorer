@@ -18,7 +18,7 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp" >
+                android:layout_marginTop="10dp" >
 
                 <RelativeLayout
                     android:layout_width="wrap_content"
@@ -30,7 +30,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-condensed"
-                        android:text="@string/accelerometer_name"
+                        android:text="@string/acceleration_name"
                         android:textAppearance="?android:attr/textAppearanceLarge"
                         android:textColor="@color/dark_orange" />
 
@@ -40,7 +40,7 @@
                         android:layout_height="wrap_content"
                         android:layout_toRightOf="@+id/label_sensor_name"
                         android:fontFamily="sans-serif-condensed"
-                        android:text="@string/sensor_name"
+                        android:text="@string/explorer_name"
                         android:textAppearance="?android:attr/textAppearanceLarge" />
 
                     <TextView
@@ -114,7 +114,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" 
                         android:layout_alignParentBottom="true"
-                        android:layout_marginBottom="10dp">
+                        android:layout_marginBottom="5dp">
 
                         <RelativeLayout
                             android:layout_width="wrap_content"

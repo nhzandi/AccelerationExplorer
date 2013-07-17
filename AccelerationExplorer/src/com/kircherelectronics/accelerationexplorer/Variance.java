@@ -54,7 +54,7 @@ public class Variance
 	 */
 	private void enforceWindow()
 	{
-		if (varianceList.size() > AccelerationActivity.getSampleWindow())
+		if (varianceList.size() > AccelerationExplorerActivity.getSampleWindow())
 		{
 			varianceList.removeFirst();
 		}

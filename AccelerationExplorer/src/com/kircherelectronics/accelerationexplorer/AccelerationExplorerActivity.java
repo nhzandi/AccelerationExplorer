@@ -2,6 +2,8 @@ package com.kircherelectronics.accelerationexplorer;
 
 import java.text.DecimalFormat;
 
+import android.R.color;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,7 +12,11 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -20,6 +26,7 @@ import android.widget.RelativeLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 
 /*
@@ -46,8 +53,9 @@ import android.content.Context;
  * 
  * @author Kaleb
  * @version %I%, %G%
+ * 
  */
-public class AccelerationActivity extends Activity implements
+public class AccelerationExplorerActivity extends Activity implements
 		SensorEventListener, OnClickListener, Sampler
 {
 	// The six state measurements
@@ -103,6 +111,8 @@ public class AccelerationActivity extends Activity implements
 	// Keep track of the sample frequency
 	private float time = System.nanoTime();
 	private float timeOld = System.nanoTime();
+	
+	private GaugeAccelerationHolo accelerationGauge;
 
 	// View for the phone orientation images
 	private ImageView imageViewPhone;
@@ -193,6 +203,8 @@ public class AccelerationActivity extends Activity implements
 					/ SensorManager.GRAVITY_EARTH));
 			textViewZAxis.setText(df.format(acceleration[2]
 					/ SensorManager.GRAVITY_EARTH));
+			
+			accelerationGauge.updatePoint(acceleration[0], acceleration[1], Color.parseColor("#33b5e5"));
 
 			// Attempt to sample the data
 			if (running)
@@ -217,7 +229,7 @@ public class AccelerationActivity extends Activity implements
 			if (!running && !finished)
 			{
 				CharSequence text = "Hold the device in the described orientation until the device vibrates";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -237,7 +249,7 @@ public class AccelerationActivity extends Activity implements
 				createInputView();
 
 				CharSequence text = "Hold the device in the described orientation until the device vibrates";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -265,6 +277,34 @@ public class AccelerationActivity extends Activity implements
 				running = false;
 				finished = false;
 			}
+		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
+		return true;
+	}
+
+	/**
+	 * Event Handling for Individual menu item selected Identify single menu
+	 * item by it's id
+	 * */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch (item.getItemId())
+		{
+
+		// Log the data
+		case R.id.action_help:
+			showHelpDialog();
+			return true;
+
+		default:
+			return super.onOptionsItemSelected(item);
 		}
 	}
 
@@ -450,6 +490,9 @@ public class AccelerationActivity extends Activity implements
 		imageViewPhone = (ImageView) inputLayout
 				.findViewById(R.id.imageViewPhone);
 		imageViewPhone.setImageResource(R.drawable.phone);
+		
+		accelerationGauge = (GaugeAccelerationHolo) inputLayout
+				.findViewById(R.id.gauge_acceleration);
 
 		layout.addView(inputLayout, relativeParams);
 
@@ -656,7 +699,7 @@ public class AccelerationActivity extends Activity implements
 				imageViewPhone.setImageResource(R.drawable.phone_0);
 
 				CharSequence text = "Only 5 more to go... Invert the device 180 degrees.";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -680,7 +723,7 @@ public class AccelerationActivity extends Activity implements
 				imageViewPhone.setImageResource(R.drawable.phone_1);
 
 				CharSequence text = "Only 4 more to go... Rotate the device 90 degrees clock-wise";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -704,7 +747,7 @@ public class AccelerationActivity extends Activity implements
 				imageViewPhone.setImageResource(R.drawable.phone_2);
 
 				CharSequence text = "Only 3 more to go... Rotate the device 180 degrees clock-wise";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -728,7 +771,7 @@ public class AccelerationActivity extends Activity implements
 				imageViewPhone.setImageResource(R.drawable.phone_3);
 
 				CharSequence text = "Only 2 more to go... Set the phone down face-up";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -753,7 +796,7 @@ public class AccelerationActivity extends Activity implements
 				imageViewPhone.setImageResource(R.drawable.phone_4);
 
 				CharSequence text = "Only 1 more to go... Set the phone down face-down";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -777,7 +820,7 @@ public class AccelerationActivity extends Activity implements
 				imageViewPhone.setImageResource(R.drawable.phone);
 
 				CharSequence text = "Sampling complete...";
-				int duration = Toast.LENGTH_SHORT;
+				int duration = Toast.LENGTH_LONG;
 
 				Toast toast = Toast.makeText(this, text, duration);
 				toast.setGravity(Gravity.CENTER, 0, 0);
@@ -806,4 +849,18 @@ public class AccelerationActivity extends Activity implements
 		}
 	}
 
+	private void showHelpDialog()
+	{
+		Dialog helpDialog = new Dialog(this);
+
+		helpDialog.setCancelable(true);
+		helpDialog.setCanceledOnTouchOutside(true);
+		helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+		View view = getLayoutInflater().inflate(R.layout.help, null);
+
+		helpDialog.setContentView(view);
+		
+		helpDialog.show();
+	}
 }

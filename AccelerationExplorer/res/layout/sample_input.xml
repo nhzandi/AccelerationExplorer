@@ -14,7 +14,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="10dp"
             android:src="@drawable/phone" />
     </RelativeLayout>
 
@@ -117,6 +117,19 @@
                 </TableRow>
             </TableLayout>
         </RelativeLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layout_gauge"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/layout_statistics" >
+
+        <com.kircherelectronics.accelerationexplorer.GaugeAccelerationHolo
+            android:id="@+id/gauge_acceleration"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_centerHorizontal="true" />
     </RelativeLayout>
 
 </RelativeLayout>
