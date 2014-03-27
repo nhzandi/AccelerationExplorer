@@ -1,6 +1,16 @@
-package com.kircherelectronics.accelerationexplorer;
+package com.kircherelectronics.accelerationexplorer.activity;
 
 import java.text.DecimalFormat;
+
+import com.kircherelectronics.accelerationexplorer.R;
+import com.kircherelectronics.accelerationexplorer.R.drawable;
+import com.kircherelectronics.accelerationexplorer.R.id;
+import com.kircherelectronics.accelerationexplorer.R.layout;
+import com.kircherelectronics.accelerationexplorer.R.menu;
+import com.kircherelectronics.accelerationexplorer.data.SampleAxisStatable;
+import com.kircherelectronics.accelerationexplorer.data.SampleAxisState;
+import com.kircherelectronics.accelerationexplorer.data.Sampler;
+import com.kircherelectronics.accelerationexplorer.gauge.GaugeAccelerationHolo;
 
 import android.R.color;
 import android.graphics.Color;
@@ -55,7 +65,7 @@ import android.content.Context;
  * @version %I%, %G%
  * 
  */
-public class AccelerationExplorerActivity extends Activity implements
+public class AccelerationDiagnosticActivity extends Activity implements
 		SensorEventListener, OnClickListener, Sampler
 {
 	// The six state measurements
@@ -91,14 +101,7 @@ public class AccelerationExplorerActivity extends Activity implements
 	private boolean running = false;
 	// Indicates true if samples have been recorded successfully
 	private boolean finished = false;
-
-	// Button to control the state
-	private Button startButton;
-
-	// Format the output
-	private DecimalFormat df = new DecimalFormat("#.##");
-	private DecimalFormat dfLong = new DecimalFormat("#.####");
-
+	
 	// The number of updates per second, i.e sample frequency. The inverse, ie
 	// 1/frequency is
 	// the sample period.
@@ -112,17 +115,24 @@ public class AccelerationExplorerActivity extends Activity implements
 	private float time = System.nanoTime();
 	private float timeOld = System.nanoTime();
 	
-	private GaugeAccelerationHolo accelerationGauge;
-
-	// View for the phone orientation images
-	private ImageView imageViewPhone;
-
 	// The event timestamps for the sample updates are erratic, so we average by
 	// dividing total time by the number of samples with is much more stable.
 	private int count = 0;
 
 	// The current state
 	private int sampleState = 0;
+
+	// Button to control the state
+	private Button startButton;
+
+	// Format the output
+	private DecimalFormat df = new DecimalFormat("#.##");
+	private DecimalFormat dfLong = new DecimalFormat("#.####");
+	
+	private GaugeAccelerationHolo accelerationGauge;
+
+	// View for the phone orientation images
+	private ImageView imageViewPhone;
 
 	// State managers manage almost all of the state for each set of samples
 	private SampleAxisStatable yPos;
@@ -284,7 +294,7 @@ public class AccelerationExplorerActivity extends Activity implements
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
 		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.main, menu);
+		inflater.inflate(R.menu.settings_diagnostic_menu, menu);
 		return true;
 	}
 

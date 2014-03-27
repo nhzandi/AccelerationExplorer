@@ -1,4 +1,4 @@
-package com.kircherelectronics.accelerationexplorer;
+package com.kircherelectronics.accelerationexplorer.statistics;
 
 /*
  * Acceleration Explorer
@@ -21,6 +21,8 @@ package com.kircherelectronics.accelerationexplorer;
 import java.util.LinkedList;
 
 import org.apache.commons.math3.stat.StatUtils;
+
+import com.kircherelectronics.accelerationexplorer.activity.AccelerationDiagnosticActivity;
 
 /**
  * An implementation to calculate variance from a rolling window.
@@ -54,7 +56,7 @@ public class Variance
 	 */
 	private void enforceWindow()
 	{
-		if (varianceList.size() > AccelerationExplorerActivity.getSampleWindow())
+		if (varianceList.size() > AccelerationDiagnosticActivity.getSampleWindow())
 		{
 			varianceList.removeFirst();
 		}

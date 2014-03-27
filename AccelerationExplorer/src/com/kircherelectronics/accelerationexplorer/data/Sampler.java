@@ -1,4 +1,4 @@
-package com.kircherelectronics.accelerationexplorer;
+package com.kircherelectronics.accelerationexplorer.data;
 
 /*
  * Acceleration Explorer

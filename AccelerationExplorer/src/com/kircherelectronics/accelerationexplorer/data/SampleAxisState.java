@@ -1,7 +1,10 @@
-package com.kircherelectronics.accelerationexplorer;
+package com.kircherelectronics.accelerationexplorer.data;
 
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+
+import com.kircherelectronics.accelerationexplorer.activity.AccelerationDiagnosticActivity;
+import com.kircherelectronics.accelerationexplorer.statistics.Variance;
 
 import android.util.Log;
 
@@ -41,10 +44,10 @@ public class SampleAxisState implements SampleAxisStatable
 	private boolean sampleValid = false;
 
 	// Get a local copy of the sample size
-	private int sampleSize = AccelerationExplorerActivity.getSampleSize();
+	private int sampleSize = AccelerationDiagnosticActivity.getSampleSize();
 
 	// Get a local copy of the thresholds
-	private double sampleThreshold = AccelerationExplorerActivity.getSampleThreshold();
+	private double sampleThreshold = AccelerationDiagnosticActivity.getSampleThreshold();
 	private double sampleGravityThresholdMax;
 	private double sampleGravityThresholdMin;
 
@@ -87,16 +90,16 @@ public class SampleAxisState implements SampleAxisStatable
 		// Setup the gravity thresholds
 		if (this.positiveAxis)
 		{
-			sampleGravityThresholdMax = AccelerationExplorerActivity
+			sampleGravityThresholdMax = AccelerationDiagnosticActivity
 					.getGravityThresholdMax();
-			sampleGravityThresholdMin = AccelerationExplorerActivity
+			sampleGravityThresholdMin = AccelerationDiagnosticActivity
 					.getGravityThresholdMin();
 		}
 		else
 		{
-			sampleGravityThresholdMax = -AccelerationExplorerActivity
+			sampleGravityThresholdMax = -AccelerationDiagnosticActivity
 					.getGravityThresholdMin();
-			sampleGravityThresholdMin = -AccelerationExplorerActivity
+			sampleGravityThresholdMin = -AccelerationDiagnosticActivity
 					.getGravityThresholdMax();
 		}
 

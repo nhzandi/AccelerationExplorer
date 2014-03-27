@@ -1,4 +1,4 @@
-package com.kircherelectronics.accelerationexplorer;
+package com.kircherelectronics.accelerationexplorer.gauge;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -154,9 +154,9 @@ public final class GaugeAccelerationHolo extends View
 	 */
 	public void updatePoint(float x, float y, int color)
 	{
-		this.x = ((faceRect.right - faceRect.left) / (SensorManager.GRAVITY_EARTH * 2))
-				* x + faceRect.centerX();
-		this.y = ((faceRect.bottom - faceRect.top) / (SensorManager.GRAVITY_EARTH * 2))
+		this.x = ((faceRect.right - faceRect.left) / (SensorManager.GRAVITY_EARTH * 0.5f))
+				* -x + faceRect.centerX();
+		this.y = ((faceRect.bottom - faceRect.top) / (SensorManager.GRAVITY_EARTH * 0.5f))
 				* y + faceRect.centerY();
 
 		this.color = color;
