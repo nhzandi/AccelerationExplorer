@@ -5,6 +5,10 @@ Read the full description in this [blog article](http://blog.kircherelectronics.
 
 Download the free application from the [Goolge Play Store](https://play.google.com/store/apps/details?id=com.kircherelectronics.accelerationexplorer&hl=en)
 
+Acceleration Explorer will plot the acceleration sensor outputs in real time to the screen. The acceleration sensor outputs can also be logged to a .CSV file and be opened in any spreedsheet application.
+
+Analog gauges of the acceleration and rotation of the device are also displayed to help further visualize the acceleration sensor outputs.
+
 Discover the noise, offset and skew associated with your Android devices acceleration sensor! 
 
 Acceleration Explorer allows users to investigate the noise, offset and skew associated with the accelerometer sensor on Android devices. After a quick calibration process, Acceleration Explorer will calculate the magnitude of each axis and the noise associated with it. Acceleration Explorer also determines the minimum and maximum amplitudes of each axis along with the update frequency of the acceleration sensor.
