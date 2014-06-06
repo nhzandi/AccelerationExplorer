@@ -40,7 +40,7 @@ import com.kircherelectronics.accelerationexplorer.plot.PlotColor;
 
 /*
  * Acceleration Explorer
- * Copyright (C) 2014, Kaleb Kircher - Kircher Engineering, LLC
+ * Copyright (C) 2013-2014, Kaleb Kircher - Kircher Engineering, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -95,17 +95,16 @@ public class AccelerationExplorerActivity extends Activity implements
 
 	// Indicate if the output should be logged to a .csv file
 	private boolean logData = false;
-	
+	private boolean run = false;
+	private boolean dataReady = false;
+
 	// Touch to zoom constants for the dynamicPlot
 	private float distance = 0;
 	private float zoom = 1.2f;
 
 	// Outputs for the acceleration and LPFs
 	private float[] acceleration = new float[3];
-	private float[] lpfWikiOutput = new float[3];
-	private float[] lpfAndDevOutput = new float[3];
-	private float[] meanFilterOutput = new float[3];
-	
+
 	// The generation of the log output
 	private int generation = 0;
 
@@ -122,18 +121,22 @@ public class AccelerationExplorerActivity extends Activity implements
 
 	// Graph plot for the UI outputs
 	private DynamicLinePlot dynamicPlot;
-	
+
 	private GaugeAccelerationHolo accelerationGauge;
 	private GaugeRotationHolo rotationGauge;
 
 	// Handler for the UI plots so everything plots smoothly
 	private Handler handler;
 
+	private Thread thread;
+
 	// Icon to indicate logging is active
 	private ImageView iconLogger;
 
 	// Plot colors
 	private PlotColor color;
+
+	private Runnable runnable;
 
 	// Sensor manager to access the accelerometer sensor
 	private SensorManager sensorManager;
@@ -142,21 +145,6 @@ public class AccelerationExplorerActivity extends Activity implements
 	private String plotAccelXAxisTitle = "AX";
 	private String plotAccelYAxisTitle = "AY";
 	private String plotAccelZAxisTitle = "AZ";
-
-	// LPF Wikipedia plot titles
-	private String plotLPFWikiXAxisTitle = "WX";
-	private String plotLPFWikiYAxisTitle = "WY";
-	private String plotLPFWikiZAxisTitle = "WZ";
-
-	// LPF Android Developer plot tiltes
-	private String plotLPFAndDevXAxisTitle = "ADX";
-	private String plotLPFAndDevYAxisTitle = "ADY";
-	private String plotLPFAndDevZAxisTitle = "ADZ";
-
-	// Mean filter plot tiltes
-	private String plotMeanXAxisTitle = "MX";
-	private String plotMeanYAxisTitle = "MY";
-	private String plotMeanZAxisTitle = "MZ";
 
 	// Output log
 	private String log;
@@ -189,17 +177,30 @@ public class AccelerationExplorerActivity extends Activity implements
 		initTextOutputs();
 
 		initIcons();
-		
+
 		initColor();
 
 		initPlots();
-		
+
 		initGauges();
 
 		sensorManager = (SensorManager) this
 				.getSystemService(Context.SENSOR_SERVICE);
 
 		handler = new Handler();
+
+		runnable = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				handler.postDelayed(this, 100);
+
+				plotData();
+				updateGauges();
+				updateAccelerationText();
+			}
+		};
 	}
 
 	@Override
@@ -214,7 +215,16 @@ public class AccelerationExplorerActivity extends Activity implements
 			writeLogToFile();
 		}
 
-		handler.removeCallbacks(this);
+		if (run && thread != null)
+		{
+			run = false;
+
+			thread.interrupt();
+
+			thread = null;
+		}
+
+		handler.removeCallbacks(runnable);
 	}
 
 	@Override
@@ -224,7 +234,16 @@ public class AccelerationExplorerActivity extends Activity implements
 
 		readPrefs();
 
-		handler.post(this);
+		thread = new Thread(this);
+
+		if (!run)
+		{
+			run = true;
+
+			thread.start();
+		}
+
+		handler.post(runnable);
 
 		// Register for sensor updates.
 		sensorManager.registerListener(this,
@@ -244,10 +263,8 @@ public class AccelerationExplorerActivity extends Activity implements
 	{
 		// Get a local copy of the sensor values
 		System.arraycopy(event.values, 0, acceleration, 0, event.values.length);
-
-		acceleration[0] = acceleration[0] / SensorManager.GRAVITY_EARTH;
-		acceleration[1] = acceleration[1] / SensorManager.GRAVITY_EARTH;
-		acceleration[2] = acceleration[2] / SensorManager.GRAVITY_EARTH;
+		
+		dataReady = true;
 	}
 
 	@Override
@@ -329,10 +346,12 @@ public class AccelerationExplorerActivity extends Activity implements
 	@Override
 	public void run()
 	{
-		handler.postDelayed(this, 100);
+		while (run && !Thread.currentThread().isInterrupted())
+		{
+			logData();
+		}
 
-		plotData();
-		logData();
+		Thread.currentThread().interrupt();
 	}
 
 	/**
@@ -397,14 +416,12 @@ public class AccelerationExplorerActivity extends Activity implements
 		iconLogger = (ImageView) findViewById(R.id.icon_logger);
 		iconLogger.setVisibility(View.INVISIBLE);
 	}
-	
+
 	private void initGauges()
 	{
-		accelerationGauge = (GaugeAccelerationHolo) 
-				findViewById(R.id.gauge_acceleration);
-		
-		rotationGauge = (GaugeRotationHolo) 
-				findViewById(R.id.gauge_rotation);
+		accelerationGauge = (GaugeAccelerationHolo) findViewById(R.id.gauge_acceleration);
+
+		rotationGauge = (GaugeRotationHolo) findViewById(R.id.gauge_rotation);
 	}
 
 	/**
@@ -419,9 +436,8 @@ public class AccelerationExplorerActivity extends Activity implements
 		XYPlot plot = (XYPlot) findViewById(R.id.plot_sensor);
 		plot.setTitle("Acceleration");
 		dynamicPlot = new DynamicLinePlot(plot);
-		dynamicPlot.setMaxRange(1.2);
-		dynamicPlot.setMinRange(-1.2);
-
+		dynamicPlot.setMaxRange(20);
+		dynamicPlot.setMinRange(-20);
 
 		addAccelerationPlot();
 	}
@@ -445,9 +461,11 @@ public class AccelerationExplorerActivity extends Activity implements
 	 */
 	private void plotData()
 	{
-		updateGraphPlot();
-		updateGauges();
-		updateAccelerationText();
+		dynamicPlot.setData(acceleration[0], PLOT_ACCEL_X_AXIS_KEY);
+		dynamicPlot.setData(acceleration[1], PLOT_ACCEL_Y_AXIS_KEY);
+		dynamicPlot.setData(acceleration[2], PLOT_ACCEL_Z_AXIS_KEY);
+
+		dynamicPlot.draw();
 	}
 
 	/**
@@ -467,6 +485,8 @@ public class AccelerationExplorerActivity extends Activity implements
 	{
 		if (logData == false)
 		{
+			generation = 0;
+
 			CharSequence text = "Logging Data";
 			int duration = Toast.LENGTH_SHORT;
 
@@ -483,25 +503,9 @@ public class AccelerationExplorerActivity extends Activity implements
 
 			headers += this.plotAccelZAxisTitle + ",";
 
-			headers += this.plotLPFWikiXAxisTitle + ",";
+			log = headers;
 
-			headers += this.plotLPFWikiYAxisTitle + ",";
-
-			headers += this.plotLPFWikiZAxisTitle + ",";
-
-			headers += this.plotLPFAndDevXAxisTitle + ",";
-
-			headers += this.plotLPFAndDevYAxisTitle + ",";
-
-			headers += this.plotLPFAndDevZAxisTitle + ",";
-
-			headers += this.plotMeanXAxisTitle + ",";
-
-			headers += this.plotMeanYAxisTitle + ",";
-
-			headers += this.plotMeanZAxisTitle + ",";
-
-			log = headers + "\n";
+			log += System.getProperty("line.separator");
 
 			iconLogger.setVisibility(View.VISIBLE);
 
@@ -521,32 +525,24 @@ public class AccelerationExplorerActivity extends Activity implements
 	 */
 	private void logData()
 	{
-		if (logData)
+		if (logData && dataReady)
 		{
 			if (generation == 0)
 			{
 				logTime = System.currentTimeMillis();
 			}
 
-			log += System.getProperty("line.separator");
 			log += generation++ + ",";
-			log += System.currentTimeMillis() - logTime + ",";
+			
+			log += df.format((System.currentTimeMillis() - logTime) / 1000.0f) + ",";
 
 			log += acceleration[0] + ",";
 			log += acceleration[1] + ",";
 			log += acceleration[2] + ",";
 
-			log += lpfWikiOutput[0] + ",";
-			log += lpfWikiOutput[1] + ",";
-			log += lpfWikiOutput[2] + ",";
-
-			log += lpfAndDevOutput[0] + ",";
-			log += lpfAndDevOutput[1] + ",";
-			log += lpfAndDevOutput[2] + ",";
-
-			log += meanFilterOutput[0] + ",";
-			log += meanFilterOutput[1] + ",";
-			log += meanFilterOutput[2] + ",";
+			log += System.getProperty("line.separator");
+			
+			dataReady = false;
 		}
 	}
 
@@ -556,15 +552,14 @@ public class AccelerationExplorerActivity extends Activity implements
 	private void writeLogToFile()
 	{
 		Calendar c = Calendar.getInstance();
-		String filename = "AccelerationFilter-" + c.get(Calendar.YEAR) + "-"
+		String filename = "AccelerationExplorer-" + c.get(Calendar.YEAR) + "-"
 				+ c.get(Calendar.DAY_OF_WEEK_IN_MONTH) + "-"
-				+ c.get(Calendar.HOUR) + "-" + c.get(Calendar.HOUR) + "-"
-				+ c.get(Calendar.MINUTE) + "-" + c.get(Calendar.SECOND)
-				+ ".csv";
+				+ c.get(Calendar.HOUR) + "-" + c.get(Calendar.MINUTE) + "-"
+				+ c.get(Calendar.SECOND) + ".csv";
 
 		File dir = new File(Environment.getExternalStorageDirectory()
-				+ File.separator + "AccelerationFilter" + File.separator
-				+ "Logs" + File.separator + "Acceleration");
+				+ File.separator + "AccelerationExplorer" + File.separator
+				+ "Logs");
 		if (!dir.exists())
 		{
 			dir.mkdirs();
@@ -605,7 +600,7 @@ public class AccelerationExplorerActivity extends Activity implements
 			// Note that it appears that the ACTION_MEDIA_MOUNTED approach is
 			// now blocked for non-system apps on Android 4.4.
 			MediaScannerConnection.scanFile(this, new String[]
-			{ "file://" + Environment.getExternalStorageDirectory() }, null,
+			{ file.getPath() }, null,
 					new MediaScannerConnection.OnScanCompletedListener()
 					{
 						@Override
@@ -623,8 +618,8 @@ public class AccelerationExplorerActivity extends Activity implements
 	 */
 	private void readPrefs()
 	{
-		SharedPreferences prefs = this.getSharedPreferences("acceleration_explorer_prefs",
-				Activity.MODE_PRIVATE);
+		SharedPreferences prefs = this.getSharedPreferences(
+				"acceleration_explorer_prefs", Activity.MODE_PRIVATE);
 	}
 
 	/**
@@ -638,21 +633,10 @@ public class AccelerationExplorerActivity extends Activity implements
 		zAxis.setText(df.format(acceleration[2]));
 	}
 
-	/**
-	 * Update the graph plot.
-	 */
-	private void updateGraphPlot()
-	{
-		dynamicPlot.setData(acceleration[0], PLOT_ACCEL_X_AXIS_KEY);
-		dynamicPlot.setData(acceleration[1], PLOT_ACCEL_Y_AXIS_KEY);
-		dynamicPlot.setData(acceleration[2], PLOT_ACCEL_Z_AXIS_KEY);
-
-		dynamicPlot.draw();
-	}
-	
 	private void updateGauges()
 	{
-		accelerationGauge.updatePoint(acceleration[0], acceleration[1], Color.parseColor("#33b5e5"));
+		accelerationGauge.updatePoint(acceleration[0]/SensorManager.GRAVITY_EARTH, acceleration[1]/SensorManager.GRAVITY_EARTH,
+				Color.parseColor("#33b5e5"));
 		rotationGauge.updateRotation(acceleration);
 	}
 }

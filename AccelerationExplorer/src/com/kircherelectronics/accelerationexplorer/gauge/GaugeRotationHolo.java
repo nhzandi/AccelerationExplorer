@@ -11,13 +11,14 @@ import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
+import android.hardware.SensorManager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
 /*
- * Cardan Linear Acceleration
- * Copyright (C) 2013, Kaleb Kircher - Boki Software, Kircher Engineering, LLC
+ * Acceleration Explorer
+ * Copyright (C) 2013-2014, Kaleb Kircher - Kircher Engineering, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,10 +42,9 @@ import android.view.View;
  * Android 3.0 which won't hog the UI thread like View will. This should only be
  * used with devices or certain libraries that require View.
  * 
- * @author Kaleb, Scott Bannick
+ * @author Kaleb
  * @version %I%, %G%
  * @see http://developer.android.com/reference/android/view/View.html
- * @since Scott Bannick 5/19/2013: Made gui changes.
  */
 public final class GaugeRotationHolo extends View
 {
@@ -115,9 +115,6 @@ public final class GaugeRotationHolo extends View
 	private Bitmap bezel;
 	// Static bitmap for the face of the gauge
 	private Bitmap face;
-
-	// scale configuration
-	private static int totalNicks = 5;
 
 	// Keep track of the rotation of the device
 	private float[] rotation = new float[3];
@@ -204,7 +201,11 @@ public final class GaugeRotationHolo extends View
 	 */
 	public void updateRotation(float[] rotation)
 	{
-		this.rotation = rotation;
+		System.arraycopy(rotation, 0, this.rotation, 0, rotation.length);
+		
+		this.rotation[0] = this.rotation[0] / SensorManager.GRAVITY_EARTH;
+		this.rotation[1] = this.rotation[1] / SensorManager.GRAVITY_EARTH;
+		this.rotation[2] = this.rotation[2] / SensorManager.GRAVITY_EARTH;
 
 		this.invalidate();
 	}

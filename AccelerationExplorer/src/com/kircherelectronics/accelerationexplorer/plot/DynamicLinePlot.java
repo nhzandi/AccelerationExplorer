@@ -230,7 +230,7 @@ public class DynamicLinePlot
 		this.dynamicPlot.setTicksPerRangeLabel(3);
 		this.dynamicPlot.setDomainLabel("Update #");
 		this.dynamicPlot.getDomainLabelWidget().pack();
-		this.dynamicPlot.setRangeLabel("G's/Sec");
+		this.dynamicPlot.setRangeLabel("Meter's/Sec^2");
 		this.dynamicPlot.getRangeLabelWidget().pack();
 		this.dynamicPlot.getLegendWidget().setWidth(0.7f);
 		this.dynamicPlot.setGridPadding(15, 15, 15, 15);
