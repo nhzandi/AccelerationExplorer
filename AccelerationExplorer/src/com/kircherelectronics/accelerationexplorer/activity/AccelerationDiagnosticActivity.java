@@ -10,7 +10,7 @@ import com.kircherelectronics.accelerationexplorer.R.menu;
 import com.kircherelectronics.accelerationexplorer.data.SampleAxisStatable;
 import com.kircherelectronics.accelerationexplorer.data.SampleAxisState;
 import com.kircherelectronics.accelerationexplorer.data.Sampler;
-import com.kircherelectronics.accelerationexplorer.gauge.GaugeAccelerationHolo;
+import com.kircherelectronics.accelerationexplorer.gauge.GaugeAcceleration;
 
 import android.R.color;
 import android.graphics.Color;
@@ -129,7 +129,7 @@ public class AccelerationDiagnosticActivity extends Activity implements
 	private DecimalFormat df = new DecimalFormat("#.##");
 	private DecimalFormat dfLong = new DecimalFormat("#.####");
 	
-	private GaugeAccelerationHolo accelerationGauge;
+	private GaugeAcceleration accelerationGauge;
 
 	// View for the phone orientation images
 	private ImageView imageViewPhone;
@@ -157,7 +157,7 @@ public class AccelerationDiagnosticActivity extends Activity implements
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.dashboard_home);
+		setContentView(R.layout.diagnostic_activity);
 		createInputView();
 
 		startButton = (Button) findViewById(R.id.button_start);
@@ -214,7 +214,7 @@ public class AccelerationDiagnosticActivity extends Activity implements
 			textViewZAxis.setText(df.format(acceleration[2]
 					/ SensorManager.GRAVITY_EARTH));
 			
-			accelerationGauge.updatePoint(acceleration[0], acceleration[1], Color.parseColor("#33b5e5"));
+			accelerationGauge.updatePoint(acceleration[0]/SensorManager.GRAVITY_EARTH, acceleration[1]/SensorManager.GRAVITY_EARTH, Color.parseColor("#33b5e5"));
 
 			// Attempt to sample the data
 			if (running)
@@ -501,7 +501,7 @@ public class AccelerationDiagnosticActivity extends Activity implements
 				.findViewById(R.id.imageViewPhone);
 		imageViewPhone.setImageResource(R.drawable.phone);
 		
-		accelerationGauge = (GaugeAccelerationHolo) inputLayout
+		accelerationGauge = (GaugeAcceleration) inputLayout
 				.findViewById(R.id.gauge_acceleration);
 
 		layout.addView(inputLayout, relativeParams);
@@ -867,7 +867,7 @@ public class AccelerationDiagnosticActivity extends Activity implements
 		helpDialog.setCanceledOnTouchOutside(true);
 		helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-		View view = getLayoutInflater().inflate(R.layout.help, null);
+		View view = getLayoutInflater().inflate(R.layout.help_dialog_view, null);
 
 		helpDialog.setContentView(view);
 		

@@ -125,7 +125,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/layout_statistics" >
 
-        <com.kircherelectronics.accelerationexplorer.gauge.GaugeAccelerationHolo
+        <com.kircherelectronics.accelerationexplorer.gauge.GaugeAcceleration
             android:id="@+id/gauge_acceleration"
             android:layout_width="120dp"
             android:layout_height="120dp"

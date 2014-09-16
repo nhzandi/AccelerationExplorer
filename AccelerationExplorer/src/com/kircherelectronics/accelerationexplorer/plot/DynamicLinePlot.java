@@ -2,15 +2,15 @@ package com.kircherelectronics.accelerationexplorer.plot;
 
 import java.util.LinkedList;
 
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.util.SparseArray;
+
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.PointLabelFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.util.Log;
-import android.util.SparseArray;
 
 /*
  * Acceleration Filter

@@ -1,19 +1,16 @@
-package com.kircherelectronics.accelerationexplorer.gauge;
+package com.kircherelectronics.accelerationexplorer.view;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.EmbossMaskFilter;
-import android.graphics.LinearGradient;
-import android.graphics.MaskFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Path.FillType;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.hardware.SensorManager;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.TextureView;
 import android.view.View;
 
 /**
@@ -23,12 +20,12 @@ import android.view.View;
  * Note that after Android 4.0 TextureView exists, as does SurfaceView for
  * Android 3.0 which won't hog the UI thread like View will. This should only be
  * used with devices or certain libraries that require View.
- *  
+ * 
  * @author Kaleb
  * @version %I%, %G%
  * @see http://developer.android.com/reference/android/view/View.html
  */
-public final class GaugeAccelerationHolo extends View
+public final class AccelerationVectorView extends View
 {
 
 	/*
@@ -75,43 +72,31 @@ public final class GaugeAccelerationHolo extends View
 	 * break a significant number of them, from subtly to significantly.)
 	 */
 
-	private static final String tag = GaugeAccelerationHolo.class.getSimpleName();
+	private static final String tag = AccelerationVectorView.class
+			.getSimpleName();
 
 	// holds the cached static part
 	private Bitmap background;
 
 	private Paint backgroundPaint;
-	private Paint pointPaint;
-	private Paint rimPaint;
-	private Paint rimShadowPaint;
+	private Paint axisPaint;
 
-	private RectF faceRect;
+	private Paint yAxisLengthPaint;
+	private Paint xAxisLengthPaint;
+
+	private Paint vectorPaint;
+
 	private RectF rimRect;
-	//added by Scott
-	private RectF rimOuterRect;
-	private RectF rimOuterTopRect;
-	private RectF rimOuterBottomRect;
-	private RectF rimOuterLeftRect;
-	private RectF rimOuterRightRect;
-	private RectF innerRim;
-	private RectF innerface;
-	private RectF rimInnerTopRect;
-	private RectF rimInnerBottomRect;
-	private RectF rimInnerLeftRect;
-	private RectF rimInnerRightRect;
-	private RectF innerMostDot;
 
 	private float x;
 	private float y;
-
-	private int color = 0;
 
 	/**
 	 * Create a new instance.
 	 * 
 	 * @param context
 	 */
-	public GaugeAccelerationHolo(Context context)
+	public AccelerationVectorView(Context context)
 	{
 		super(context);
 		init();
@@ -123,7 +108,7 @@ public final class GaugeAccelerationHolo extends View
 	 * @param context
 	 * @param attrs
 	 */
-	public GaugeAccelerationHolo(Context context, AttributeSet attrs)
+	public AccelerationVectorView(Context context, AttributeSet attrs)
 	{
 		super(context, attrs);
 		init();
@@ -136,7 +121,8 @@ public final class GaugeAccelerationHolo extends View
 	 * @param attrs
 	 * @param defStyle
 	 */
-	public GaugeAccelerationHolo(Context context, AttributeSet attrs, int defStyle)
+	public AccelerationVectorView(Context context, AttributeSet attrs,
+			int defStyle)
 	{
 		super(context, attrs, defStyle);
 		init();
@@ -152,15 +138,35 @@ public final class GaugeAccelerationHolo extends View
 	 * @param color
 	 *            the color
 	 */
-	public void updatePoint(float x, float y, int color)
+	public void updatePoint(float x, float y)
 	{
-		this.x = ((faceRect.right - faceRect.left) / (SensorManager.GRAVITY_EARTH * 0.5f))
-				* -x + faceRect.centerX();
-		this.y = ((faceRect.bottom - faceRect.top) / (SensorManager.GRAVITY_EARTH * 0.5f))
-				* y + faceRect.centerY();
 
-		this.color = color;
-		
+		// Bound the y-axis to +/- the gravity of earth
+		if (x > SensorManager.GRAVITY_EARTH)
+		{
+			x = SensorManager.GRAVITY_EARTH;
+		}
+		if (x < -SensorManager.GRAVITY_EARTH)
+		{
+			x = -SensorManager.GRAVITY_EARTH;
+		}
+
+		// Divide by the length of our axis.
+		this.x = (x / SensorManager.GRAVITY_EARTH) * 0.4f;
+
+		// Bound the y-axis to +/- the gravity of earth
+		if (y > SensorManager.GRAVITY_EARTH)
+		{
+			y = SensorManager.GRAVITY_EARTH;
+		}
+		if (y < -SensorManager.GRAVITY_EARTH)
+		{
+			y = -SensorManager.GRAVITY_EARTH;
+		}
+
+		// Normalize y to 1 and then scale to half the length of the y-axis.
+		this.y = (y / SensorManager.GRAVITY_EARTH) * 0.4f;
+
 		this.invalidate();
 	}
 
@@ -177,70 +183,37 @@ public final class GaugeAccelerationHolo extends View
 	 */
 	private void initDrawingTools()
 	{
+		// Leave a little bit of space between the side of the screen and the
+		// rectangle...
 		rimRect = new RectF(0.1f, 0.1f, 0.9f, 0.9f);
-		
-		//inner rim oval
-		innerRim = new RectF(0.25f, 0.25f, 0.75f, 0.75f);
 
-		//inner most white dot
-		innerMostDot = new RectF(0.47f, 0.47f, 0.53f, 0.53f);
-				
 		// the linear gradient is a bit skewed for realism
-		rimPaint = new Paint();
-		rimPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
-		rimPaint.setShader(new LinearGradient(0.40f, 0.0f, 0.60f, 1.0f, Color
-				.rgb(255, 255, 255), Color.rgb(255,255,255),
-				Shader.TileMode.CLAMP));
+		axisPaint = new Paint();
+		axisPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		axisPaint.setStrokeWidth(0.01f);
+		axisPaint.setColor(Color.WHITE);
+		axisPaint.setStyle(Paint.Style.STROKE);
 
-		float rimSize = 0.03f;
-		faceRect = new RectF();
-		faceRect.set(rimRect.left + rimSize, rimRect.top + rimSize,
-				rimRect.right - rimSize, rimRect.bottom - rimSize);
+		// the linear gradient is a bit skewed for realism
+		vectorPaint = new Paint();
+		vectorPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		vectorPaint.setStrokeWidth(0.01f);
+		vectorPaint.setColor(Color.RED);
+		vectorPaint.setStyle(Paint.Style.STROKE);
 
-		rimShadowPaint = new Paint();
-		rimShadowPaint.setStyle(Paint.Style.FILL);
-		rimShadowPaint.setAntiAlias(true);
+		// the linear gradient is a bit skewed for realism
+		yAxisLengthPaint = new Paint();
+		yAxisLengthPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		yAxisLengthPaint.setStrokeWidth(0.01f);
+		yAxisLengthPaint.setColor(Color.GREEN);
+		yAxisLengthPaint.setStyle(Paint.Style.STROKE);
 
-		//set the size of the outside white with the rectangles.
-		//a 'bigger' negative will increase the size.
-		float rimOuterSize = -0.04f;
-		rimOuterRect = new RectF();
-		rimOuterRect.set(rimRect.left + rimOuterSize, rimRect.top + rimOuterSize,
-				rimRect.right - rimOuterSize, rimRect.bottom - rimOuterSize);
-		
-		rimOuterTopRect = new RectF(0.5f, 0.116f, 0.5f, 0.07f);
-		rimOuterTopRect.set(rimOuterTopRect.left + rimOuterSize, rimOuterTopRect.top + rimOuterSize,
-				rimOuterTopRect.right - rimOuterSize, rimOuterTopRect.bottom - rimOuterSize);
-		
-		rimOuterBottomRect = new RectF(0.5f, 0.93f, 0.5f, 0.884f);
-		rimOuterBottomRect.set(rimOuterBottomRect.left + rimOuterSize, rimOuterBottomRect.top + rimOuterSize,
-				rimOuterBottomRect.right - rimOuterSize, rimOuterBottomRect.bottom - rimOuterSize);
-		
-		rimOuterLeftRect = new RectF(0.116f, 0.5f, 0.07f, 0.5f);
-		rimOuterLeftRect.set(rimOuterLeftRect.left + rimOuterSize, rimOuterLeftRect.top + rimOuterSize,
-				rimOuterLeftRect.right - rimOuterSize, rimOuterLeftRect.bottom - rimOuterSize);
-		
-		rimOuterRightRect = new RectF(0.93f, 0.5f, 0.884f, 0.5f);
-		rimOuterRightRect.set(rimOuterRightRect.left + rimOuterSize, rimOuterRightRect.top + rimOuterSize,
-				rimOuterRightRect.right - rimOuterSize, rimOuterRightRect.bottom - rimOuterSize);
-
-		//inner rim declarations the black oval/rect
-		float rimInnerSize = 0.02f;
-		innerface = new RectF();
-		innerface.set(innerRim.left + rimInnerSize, innerRim.top + rimInnerSize,
-				innerRim.right - rimInnerSize, innerRim.bottom - rimInnerSize);
-		
-		//inner 4 small rectangles 
-		rimInnerTopRect = new RectF(0.46f, 0.23f, 0.54f, 0.26f);
-		rimInnerBottomRect = new RectF(0.46f, 0.74f, 0.54f, 0.77f);
-		rimInnerLeftRect = new RectF(0.23f, 0.54f, 0.26f, 0.46f);
-		rimInnerRightRect = new RectF(0.74f, 0.54f, 0.77f, 0.46f);
-
-		pointPaint = new Paint();
-		pointPaint.setAntiAlias(true);
-		pointPaint.setColor(Color.WHITE);
-		pointPaint.setShadowLayer(0.01f, -0.005f, -0.005f, 0x7f000000);
-		pointPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+		// the linear gradient is a bit skewed for realism
+		xAxisLengthPaint = new Paint();
+		xAxisLengthPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		xAxisLengthPaint.setStrokeWidth(0.01f);
+		xAxisLengthPaint.setColor(Color.BLUE);
+		xAxisLengthPaint.setStyle(Paint.Style.STROKE);
 
 		backgroundPaint = new Paint();
 		backgroundPaint.setFilterBitmap(true);
@@ -278,7 +251,8 @@ public final class GaugeAccelerationHolo extends View
 		if (mode == MeasureSpec.AT_MOST || mode == MeasureSpec.EXACTLY)
 		{
 			return size;
-		} else
+		}
+		else
 		{ // (mode == MeasureSpec.UNSPECIFIED)
 			return getPreferredSize();
 		}
@@ -299,56 +273,39 @@ public final class GaugeAccelerationHolo extends View
 	 * 
 	 * @param canvas
 	 */
-	private void drawGauge(Canvas canvas)
+	private void drawAxis(Canvas canvas)
 	{
+		// Draw the Y axis
+		canvas.drawLine(rimRect.centerX(), rimRect.top, rimRect.centerX(),
+				rimRect.bottom, axisPaint);
 
-		// first, draw the metallic body
-		canvas.drawOval(rimRect, rimPaint);
-		// now the outer rim circle
-		//canvas.drawOval(rimRect, rimCirclePaint);
-		
-		//top rect
-		canvas.drawRect(rimOuterTopRect, rimPaint);
-		//bottom rect
-		canvas.drawRect(rimOuterBottomRect, rimPaint);
-		//left rect
-		canvas.drawRect(rimOuterLeftRect, rimPaint);
-		//right rect
-		canvas.drawRect(rimOuterRightRect, rimPaint);
-		
-		// draw the rim shadow inside the face
-		canvas.drawOval(faceRect, rimShadowPaint);
-		
-		//draw the inner white rim circle
-		canvas.drawOval(innerRim, rimPaint);
-		
-		//draw inner topRect
-		canvas.drawRect(rimInnerTopRect, rimPaint);
-		//draw inner bottomRect
-		canvas.drawRect(rimInnerBottomRect, rimPaint);
-		//draw inner leftrect
-		canvas.drawRect(rimInnerLeftRect, rimPaint);
-		//draw inner rightRect
-		canvas.drawRect(rimInnerRightRect, rimPaint);
-		
-		// draw the inner black oval
-		canvas.drawOval(innerface, rimShadowPaint);
-		
-		//draw inner white dot
-		canvas.drawOval(innerMostDot, rimPaint);
-	}
+		// Draw the X axis
+		canvas.drawLine(rimRect.left, rimRect.centerY(), rimRect.right,
+				rimRect.centerY(), axisPaint);
 
-	/**
-	 * Draw the measurement point.
-	 * 
-	 * @param canvas
-	 */
-	private void drawPoint(Canvas canvas)
-	{
-		canvas.save(Canvas.MATRIX_SAVE_FLAG);
-		pointPaint.setColor(this.color);
-		canvas.drawCircle(this.x, this.y, 0.025f, pointPaint);
-		canvas.restore();
+		// Draw the Y axis arrow
+		Path yArrowPath = new Path();
+		yArrowPath.setFillType(FillType.EVEN_ODD);
+
+		yArrowPath.moveTo(rimRect.centerX() - 0.002f, rimRect.top);
+		yArrowPath.lineTo(rimRect.centerX() + 0.05f, rimRect.top + 0.05f);
+		yArrowPath.moveTo(rimRect.centerX() + 0.002f, rimRect.top);
+		yArrowPath.lineTo(rimRect.centerX() - 0.05f, rimRect.top + 0.05f);
+
+		canvas.drawPath(yArrowPath, axisPaint);
+
+		// Draw the Y axis arrow
+		Path xArrowPath = new Path();
+		xArrowPath.setFillType(FillType.EVEN_ODD);
+
+		xArrowPath.moveTo(rimRect.right, rimRect.centerY() + 0.002f);
+		xArrowPath.lineTo(rimRect.right - 0.05f, rimRect.centerY() - 0.05f);
+
+		xArrowPath.moveTo(rimRect.right, rimRect.centerY() - 0.002f);
+		xArrowPath.lineTo(rimRect.right - 0.05f, rimRect.centerY() + 0.05f);
+
+		canvas.drawPath(xArrowPath, axisPaint);
+
 	}
 
 	/**
@@ -362,12 +319,13 @@ public final class GaugeAccelerationHolo extends View
 		if (background == null)
 		{
 			Log.w(tag, "Background not created");
-		} else
+		}
+		else
 		{
 			canvas.drawBitmap(background, 0, 0, backgroundPaint);
 		}
 	}
-	
+
 	@Override
 	protected void onDraw(Canvas canvas)
 	{
@@ -377,9 +335,56 @@ public final class GaugeAccelerationHolo extends View
 		canvas.save(Canvas.MATRIX_SAVE_FLAG);
 		canvas.scale(scale, scale);
 
-		drawPoint(canvas);
+		drawAxisLength(canvas);
+		drawVectorLength(canvas);
 
 		canvas.restore();
+	}
+
+	private void drawVectorLength(Canvas canvas)
+	{
+		// Draw the vector.
+		canvas.drawLine(rimRect.centerX(), rimRect.centerY(), rimRect.centerX()
+				- this.x, rimRect.centerY() + this.y, vectorPaint);
+
+		// Use the magnitude of the acceleration to determine the size of the
+		// vectors arrow. We have to scale it up by 250% because we had
+		// initially scaled it down by by 40% and we want to normalize to 1.
+		float magnitude = (float) Math.sqrt(Math.pow(this.x, 2)
+				+ Math.pow(this.y, 2)) * 2.5f;
+
+		// Rotate the canvas so the arrows rotate with the vector. Note we have
+		// to rotate by 90 degrees so 0 degrees is pointing in the positive Y
+		// axis. We also change the rotation from counter clockwise to clockwise
+		// with a negative out front. Also, note the atan2 produces a range from
+		// 0 to 180 degrees and 0 to -180 degrees. I add 360 degrees and then
+		// take mod 360 so the range is 0 to 360 degrees.
+		canvas.rotate(
+				(float) -((Math.toDegrees(Math.atan2(this.y, this.x)) + 450) % 360),
+				rimRect.centerX() - this.x, rimRect.centerY() + this.y);
+
+		// Draw the vector arrows. Note that the length of the arrows are scaled
+		// by the magnitude.
+		canvas.drawLine(rimRect.centerX() - this.x + 0.002f, rimRect.centerY()
+				+ this.y, rimRect.centerX() - this.x - (0.05f * magnitude),
+				rimRect.centerY() + this.y + (0.05f * magnitude), vectorPaint);
+
+		canvas.drawLine(rimRect.centerX() - this.x - 0.002f, rimRect.centerY()
+				+ this.y, rimRect.centerX() - this.x + (0.05f * magnitude),
+				rimRect.centerY() + this.y + (0.05f * magnitude), vectorPaint);
+
+		canvas.restore();
+	}
+
+	private void drawAxisLength(Canvas canvas)
+	{
+		// Draw the Y axis
+		canvas.drawLine(rimRect.centerX(), rimRect.centerY(),
+				rimRect.centerX(), rimRect.centerY() + this.y, yAxisLengthPaint);
+
+		// Draw the X axis
+		canvas.drawLine(rimRect.centerX(), rimRect.centerY(), rimRect.centerX()
+				- this.x, rimRect.centerY(), xAxisLengthPaint);
 	}
 
 	/**
@@ -412,7 +417,6 @@ public final class GaugeAccelerationHolo extends View
 		float scale = (float) getWidth();
 		backgroundCanvas.scale(scale, scale);
 
-		drawGauge(backgroundCanvas);
+		drawAxis(backgroundCanvas);
 	}
-
 }

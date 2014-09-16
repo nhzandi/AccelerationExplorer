@@ -46,7 +46,7 @@ import android.view.View;
  * @version %I%, %G%
  * @see http://developer.android.com/reference/android/view/View.html
  */
-public final class GaugeRotationHolo extends View
+public final class GaugeRotation extends View
 {
 
 	/*
@@ -100,7 +100,7 @@ public final class GaugeRotationHolo extends View
 	 * break a significant number of them, from subtly to significantly.)
 	 */
 
-	private static final String TAG = GaugeRotationHolo.class.getSimpleName();
+	private static final String TAG = GaugeRotation.class.getSimpleName();
 
 	// drawing tools
 	private RectF rimOuterRect;
@@ -112,9 +112,9 @@ public final class GaugeRotationHolo extends View
 
 	// Keep static bitmaps of the gauge so we only have to redraw if we have to
 	// Static bitmap for the bezel of the gauge
-	private Bitmap bezel;
+	private Bitmap bezelBitmap;
 	// Static bitmap for the face of the gauge
-	private Bitmap face;
+	private Bitmap faceBitmap;
 
 	// Keep track of the rotation of the device
 	private float[] rotation = new float[3];
@@ -160,7 +160,7 @@ public final class GaugeRotationHolo extends View
 	 * 
 	 * @param context
 	 */
-	public GaugeRotationHolo(Context context)
+	public GaugeRotation(Context context)
 	{
 		super(context);
 
@@ -173,7 +173,7 @@ public final class GaugeRotationHolo extends View
 	 * @param context
 	 * @param attrs
 	 */
-	public GaugeRotationHolo(Context context, AttributeSet attrs)
+	public GaugeRotation(Context context, AttributeSet attrs)
 	{
 		super(context, attrs);
 
@@ -187,7 +187,7 @@ public final class GaugeRotationHolo extends View
 	 * @param attrs
 	 * @param defStyle
 	 */
-	public GaugeRotationHolo(Context context, AttributeSet attrs, int defStyle)
+	public GaugeRotation(Context context, AttributeSet attrs, int defStyle)
 	{
 		super(context, attrs, defStyle);
 
@@ -202,10 +202,19 @@ public final class GaugeRotationHolo extends View
 	public void updateRotation(float[] rotation)
 	{
 		System.arraycopy(rotation, 0, this.rotation, 0, rotation.length);
+
+		this.rotation[0] = -this.rotation[0] / SensorManager.GRAVITY_EARTH;
+		this.rotation[1] = -this.rotation[1] / SensorManager.GRAVITY_EARTH;
+		this.rotation[2] = -this.rotation[2] / SensorManager.GRAVITY_EARTH;
 		
-		this.rotation[0] = this.rotation[0] / SensorManager.GRAVITY_EARTH;
-		this.rotation[1] = this.rotation[1] / SensorManager.GRAVITY_EARTH;
-		this.rotation[2] = this.rotation[2] / SensorManager.GRAVITY_EARTH;
+		if (this.rotation[1] > 2.0f)
+		{
+			this.rotation[1] = 2.0f;
+		}
+		if (this.rotation[1] < -2.0f)
+		{
+			this.rotation[1] = -2.0f;
+		}
 
 		this.invalidate();
 	}
@@ -281,9 +290,9 @@ public final class GaugeRotationHolo extends View
 
 		// now set to black
 		skyPaint = new Paint();
+		skyPaint.setAntiAlias(true);
 		skyPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
-		skyPaint.setShader(new LinearGradient(0.40f, 0.0f, 0.60f, 1.0f, Color
-				.rgb(0, 0, 0), Color.rgb(0, 0, 0), Shader.TileMode.CLAMP));
+		skyPaint.setColor(Color.WHITE);
 
 		// now set to white
 		earthPaint = new Paint();
@@ -410,81 +419,55 @@ public final class GaugeRotationHolo extends View
 	private void drawFace(Canvas canvas)
 	{
 		// free the old bitmap
-		if (face != null)
+		if (faceBitmap != null)
 		{
-			face.recycle();
+			faceBitmap.recycle();
 		}
 
-		face = Bitmap.createBitmap(getWidth(), getHeight(),
+		faceBitmap = Bitmap.createBitmap(getWidth(), getHeight(),
 				Bitmap.Config.ARGB_8888);
-		Canvas faceCanvas = new Canvas(face);
+
+		Canvas faceCanvas = new Canvas(faceBitmap);
 		float scale = (float) getWidth();
 		faceCanvas.scale(scale, scale);
 
-		float rimSize = 0.02f;
+		skyBackgroundRect.set(rimRect.left, rimRect.top, rimRect.right,
+				rimRect.bottom);
 
-		float radius = ((rimRect.left + rimSize) + (rimRect.right - rimSize)) / 2;
+		faceCanvas.drawArc(skyBackgroundRect, 0, 360, true, skyPaint);
 
-		float aPos = -rotation[1];
+		int[] allpixels = new int[faceBitmap.getHeight()
+				* faceBitmap.getWidth()];
 
-		if (aPos < 0)
+		faceBitmap.getPixels(allpixels, 0, faceBitmap.getWidth(), 0, 0,
+				faceBitmap.getWidth(), faceBitmap.getHeight());
+
+		for (int i = 0; i < faceBitmap.getHeight() * faceBitmap.getWidth(); i++)
 		{
-			aPos = 0;
+			allpixels[i] = Color.TRANSPARENT;
 		}
 
-		float aNeg = -rotation[1];
-
-		if (aNeg > 0)
+		int height = (int) ((faceBitmap.getHeight() / 2) - ((faceBitmap
+				.getHeight() / 2.5) * rotation[1]));
+		
+		if(height > faceBitmap.getHeight())
 		{
-			aNeg = 0;
+			height = faceBitmap.getHeight();
 		}
+		
+		faceBitmap
+				.setPixels(allpixels, 0, faceBitmap.getWidth(), 0, 0,
+						faceBitmap.getWidth(),
+						height);
 
-		float radiusSquaredNeg = (float) Math.pow(radius, 2);
+		float angle = (float) -(Math.atan2(-rotation[0],-rotation[2])*180/Math.PI);
+		
+		canvas.save(Canvas.MATRIX_SAVE_FLAG);
+		canvas.rotate(angle, faceBitmap.getWidth() / 2f,
+				faceBitmap.getHeight() / 2f);
 
-		float aSquaredNeg = (float) Math.pow(aNeg, 2);
-
-		float bNeg = (float) Math.sqrt(radiusSquaredNeg - aSquaredNeg);
-
-		float radiusSquaredPos = (float) Math.pow(radius, 2);
-
-		float aSquaredPos = (float) Math.pow(aPos, 2);
-
-		float bPos = (float) Math.sqrt(radiusSquaredPos - aSquaredPos);
-
-		skyBackgroundRect.set(rimRect.left + rimSize, rimRect.top + rimSize,
-				rimRect.right - rimSize, rimRect.bottom - rimSize);
-
-		if (aPos == 0)
-		{
-			faceCanvas.drawArc(skyBackgroundRect,
-					(float) (0 + (-rotation[0] * (180 / Math.PI))), 360, true,
-					skyPaint);
-		}
-		if (aNeg== 0)
-		{
-			faceCanvas.drawArc(skyBackgroundRect,
-					(float) (0 + (-rotation[0] * (180 / Math.PI))), 360, true,
-					earthPaint);
-		}
-
-		skyRect.set((rimRect.left + rimSize) + (radius - bPos) / 2, rimRect.top
-				+ rimSize, (rimRect.right - rimSize) - (radius - bPos) / 2,
-				(rimRect.bottom - rimSize) - (aPos));
-
-		faceCanvas.drawArc(skyRect,
-				(float) (0 + (-rotation[0] * (180 / Math.PI))), -180, true,
-				skyPaint);
-
-		earthRect.set((rimRect.left + rimSize) + (radius - bNeg) / 2,
-				(rimRect.top + rimSize) - (aNeg), (rimRect.right - rimSize)
-						- (radius - bNeg) / 2, rimRect.bottom - rimSize);
-
-		// canvas.drawOval(faceRect, facePaint);
-		faceCanvas.drawArc(earthRect,
-				(float) (0 + (-rotation[0] * (180 / Math.PI))), 180, true,
-				earthPaint);
-
-		canvas.drawBitmap(face, 0, 0, backgroundPaint);
+		canvas.drawBitmap(faceBitmap, 0, 0, backgroundPaint);
+		canvas.restore();
 	}
 
 	/**
@@ -494,13 +477,13 @@ public final class GaugeRotationHolo extends View
 	 */
 	private void drawBezel(Canvas canvas)
 	{
-		if (bezel == null)
+		if (bezelBitmap == null)
 		{
 			Log.w(TAG, "Bezel not created");
 		}
 		else
 		{
-			canvas.drawBitmap(bezel, 0, 0, backgroundPaint);
+			canvas.drawBitmap(bezelBitmap, 0, 0, backgroundPaint);
 		}
 	}
 
@@ -520,14 +503,14 @@ public final class GaugeRotationHolo extends View
 	private void regenerateBezel()
 	{
 		// free the old bitmap
-		if (bezel != null)
+		if (bezelBitmap != null)
 		{
-			bezel.recycle();
+			bezelBitmap.recycle();
 		}
 
-		bezel = Bitmap.createBitmap(getWidth(), getHeight(),
+		bezelBitmap = Bitmap.createBitmap(getWidth(), getHeight(),
 				Bitmap.Config.ARGB_8888);
-		Canvas bezelCanvas = new Canvas(bezel);
+		Canvas bezelCanvas = new Canvas(bezelBitmap);
 		float scale = (float) getWidth();
 		bezelCanvas.scale(scale, scale);
 

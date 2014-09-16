@@ -33,10 +33,13 @@ import android.widget.Toast;
 
 import com.androidplot.xy.XYPlot;
 import com.kircherelectronics.accelerationexplorer.R;
-import com.kircherelectronics.accelerationexplorer.gauge.GaugeAccelerationHolo;
-import com.kircherelectronics.accelerationexplorer.gauge.GaugeRotationHolo;
+import com.kircherelectronics.accelerationexplorer.dialog.SensorSettingsDialog;
+import com.kircherelectronics.accelerationexplorer.gauge.GaugeAcceleration;
+import com.kircherelectronics.accelerationexplorer.gauge.GaugeRotation;
 import com.kircherelectronics.accelerationexplorer.plot.DynamicLinePlot;
 import com.kircherelectronics.accelerationexplorer.plot.PlotColor;
+import com.kircherelectronics.accelerationexplorer.plot.PlotPrefCallback;
+import com.kircherelectronics.accelerationexplorer.prefs.PrefUtils;
 
 /*
  * Acceleration Explorer
@@ -57,36 +60,17 @@ import com.kircherelectronics.accelerationexplorer.plot.PlotColor;
  */
 
 /**
- * Implements an Activity that is intended to run filters on accelerometer
- * inputs and then graph the outputs. The user can select which filters should
- * be used and set key parameters for each filter.
- * 
- * Currently supports an IIR digital low-pass filter. The low-pass filters are
- * classified as recursive, or infinite response filters (IIR). The current, nth
- * sample output depends on both current and previous inputs as well as previous
- * outputs. It is essentially a weighted moving average, which comes in many
- * different flavors depending on the values for the coefficients, a and b. The
- * low-pass filter, the Wikipedia LPF, is an IIR single-pole implementation. The
- * coefficient, a (alpha), can be adjusted based on the sample period of the
- * sensor to produce the desired time constant that the filter will act on. It
- * takes a simple form of y[i] = y[i] + alpha * (x[i] - y[i]). Alpha is defined
- * as alpha = dt / (timeConstant + dt);) where the time constant is the length
- * of signals the filter should act on and dt is the sample period (1/frequency)
- * of the sensor.
- * 
- * A finite impulse response (FIR) moving average filter is also implemented.
- * This filter tends to be extremely effective at removing noise from the
- * signal, much more so than the low-pass filter.
+ * An Activity that plots the three axes outputs of the acceleration sensor in
+ * real-time, as well as displays the tilt of the device and acceleration of the
+ * device in two-dimensions. The acceleration sensor can be logged to an
+ * external .CSV file.
  * 
  * @author Kaleb
  * @version %I%, %G%
  */
-public class AccelerationExplorerActivity extends Activity implements
-		SensorEventListener, Runnable, OnTouchListener
+public class AccelerationPlotActivity extends Activity implements
+		SensorEventListener, Runnable, OnTouchListener, PlotPrefCallback
 {
-	// The size of the sample window that determines RMS Amplitude Noise
-	// (standard deviation)
-	private static int STD_DEV_SAMPLE_WINDOW = 20;
 
 	// Plot keys for the acceleration plot
 	private final static int PLOT_ACCEL_X_AXIS_KEY = 0;
@@ -113,6 +97,10 @@ public class AccelerationExplorerActivity extends Activity implements
 	private int plotAccelYAxisColor;
 	private int plotAccelZAxisColor;
 
+	// The size of the sample window that determines RMS Amplitude Noise
+	// (standard deviation)
+	private final int std_dev_sample_window = 20;
+
 	// Log output time stamp
 	private long logTime = 0;
 
@@ -122,13 +110,11 @@ public class AccelerationExplorerActivity extends Activity implements
 	// Graph plot for the UI outputs
 	private DynamicLinePlot dynamicPlot;
 
-	private GaugeAccelerationHolo accelerationGauge;
-	private GaugeRotationHolo rotationGauge;
+	private GaugeAcceleration accelerationGauge;
+	private GaugeRotation rotationGauge;
 
 	// Handler for the UI plots so everything plots smoothly
 	private Handler handler;
-
-	private Thread thread;
 
 	// Icon to indicate logging is active
 	private ImageView iconLogger;
@@ -140,6 +126,8 @@ public class AccelerationExplorerActivity extends Activity implements
 
 	// Sensor manager to access the accelerometer sensor
 	private SensorManager sensorManager;
+	
+	private SensorSettingsDialog sensorSettingsDialog;
 
 	// Acceleration plot titles
 	private String plotAccelXAxisTitle = "AX";
@@ -148,20 +136,24 @@ public class AccelerationExplorerActivity extends Activity implements
 
 	// Output log
 	private String log;
+	
+	private String frequencySelection;
 
 	// Acceleration UI outputs
 	private TextView xAxis;
 	private TextView yAxis;
 	private TextView zAxis;
 
+	private Thread thread;
+
 	/**
 	 * Get the sample window size for the standard deviation.
 	 * 
 	 * @return Sample window size for the standard deviation.
 	 */
-	public static int getSampleWindow()
+	public int getSampleWindow()
 	{
-		return STD_DEV_SAMPLE_WINDOW;
+		return std_dev_sample_window;
 	}
 
 	@Override
@@ -169,7 +161,7 @@ public class AccelerationExplorerActivity extends Activity implements
 	{
 		super.onCreate(savedInstanceState);
 
-		setContentView(R.layout.plot_sensor_activity);
+		setContentView(R.layout.acceleration_plot_activity);
 
 		// Read in the saved prefs
 		readPrefs();
@@ -233,6 +225,7 @@ public class AccelerationExplorerActivity extends Activity implements
 		super.onResume();
 
 		readPrefs();
+		readSensorPrefs();
 
 		thread = new Thread(this);
 
@@ -244,17 +237,13 @@ public class AccelerationExplorerActivity extends Activity implements
 		}
 
 		handler.post(runnable);
-
-		// Register for sensor updates.
-		sensorManager.registerListener(this,
-				sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-				SensorManager.SENSOR_DELAY_FASTEST);
+		
+		updateSensorDelay();
 	}
 
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy)
 	{
-		// TODO Auto-generated method stub
 
 	}
 
@@ -263,7 +252,7 @@ public class AccelerationExplorerActivity extends Activity implements
 	{
 		// Get a local copy of the sensor values
 		System.arraycopy(event.values, 0, acceleration, 0, event.values.length);
-		
+
 		dataReady = true;
 	}
 
@@ -271,7 +260,7 @@ public class AccelerationExplorerActivity extends Activity implements
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
 		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.settings_logger_menu, menu);
+		inflater.inflate(R.menu.settings_plot_menu, menu);
 		return true;
 	}
 
@@ -290,11 +279,23 @@ public class AccelerationExplorerActivity extends Activity implements
 			startDataLog();
 			return true;
 
-			// Log the data
+			// Start the diagnostic activity
 		case R.id.menu_diagnostic:
-			Intent intent = new Intent(this,
+			Intent diagnosticIntent = new Intent(this,
 					AccelerationDiagnosticActivity.class);
-			startActivity(intent);
+			startActivity(diagnosticIntent);
+			return true;
+			
+			// Log the data
+		case R.id.action_settings_sensor:
+			showSensorSettingsDialog();
+			return true;
+
+			// Start the vector activity
+		case R.id.menu_vector:
+			Intent vectorIntent = new Intent(this,
+					AccelerationVectorActivity.class);
+			startActivity(vectorIntent);
 			return true;
 
 		default:
@@ -419,9 +420,9 @@ public class AccelerationExplorerActivity extends Activity implements
 
 	private void initGauges()
 	{
-		accelerationGauge = (GaugeAccelerationHolo) findViewById(R.id.gauge_acceleration);
+		accelerationGauge = (GaugeAcceleration) findViewById(R.id.gauge_acceleration);
 
-		rotationGauge = (GaugeRotationHolo) findViewById(R.id.gauge_rotation);
+		rotationGauge = (GaugeRotation) findViewById(R.id.gauge_rotation);
 	}
 
 	/**
@@ -429,7 +430,7 @@ public class AccelerationExplorerActivity extends Activity implements
 	 */
 	private void initPlots()
 	{
-		View view = findViewById(R.id.ScrollView01);
+		View view = findViewById(R.id.acceleration_plot_layout);
 		view.setOnTouchListener(this);
 
 		// Create the graph plot
@@ -476,6 +477,21 @@ public class AccelerationExplorerActivity extends Activity implements
 	private void removeGraphPlot(int key)
 	{
 		dynamicPlot.removeSeriesPlot(key);
+	}
+	
+	/**
+	 * Show a settings dialog.
+	 */
+	private void showSensorSettingsDialog()
+	{
+		if (sensorSettingsDialog == null)
+		{
+			sensorSettingsDialog = new SensorSettingsDialog(this, this);
+			sensorSettingsDialog.setCancelable(true);
+			sensorSettingsDialog.setCanceledOnTouchOutside(true);
+		}
+
+		sensorSettingsDialog.show();
 	}
 
 	/**
@@ -533,15 +549,16 @@ public class AccelerationExplorerActivity extends Activity implements
 			}
 
 			log += generation++ + ",";
-			
-			log += df.format((System.currentTimeMillis() - logTime) / 1000.0f) + ",";
+
+			log += df.format((System.currentTimeMillis() - logTime) / 1000.0f)
+					+ ",";
 
 			log += acceleration[0] + ",";
 			log += acceleration[1] + ",";
 			log += acceleration[2] + ",";
 
 			log += System.getProperty("line.separator");
-			
+
 			dataReady = false;
 		}
 	}
@@ -553,9 +570,10 @@ public class AccelerationExplorerActivity extends Activity implements
 	{
 		Calendar c = Calendar.getInstance();
 		String filename = "AccelerationExplorer-" + c.get(Calendar.YEAR) + "-"
-				+ c.get(Calendar.DAY_OF_WEEK_IN_MONTH) + "-"
-				+ c.get(Calendar.HOUR) + "-" + c.get(Calendar.MINUTE) + "-"
-				+ c.get(Calendar.SECOND) + ".csv";
+				+ (c.get(Calendar.MONTH) + 1) + "-"
+				+ c.get(Calendar.DAY_OF_MONTH) + "-" + c.get(Calendar.HOUR)
+				+ "-" + c.get(Calendar.MINUTE) + "-" + c.get(Calendar.SECOND)
+				+ ".csv";
 
 		File dir = new File(Environment.getExternalStorageDirectory()
 				+ File.separator + "AccelerationExplorer" + File.separator
@@ -635,8 +653,95 @@ public class AccelerationExplorerActivity extends Activity implements
 
 	private void updateGauges()
 	{
-		accelerationGauge.updatePoint(acceleration[0]/SensorManager.GRAVITY_EARTH, acceleration[1]/SensorManager.GRAVITY_EARTH,
-				Color.parseColor("#33b5e5"));
+		accelerationGauge.updatePoint(acceleration[0]
+				/ SensorManager.GRAVITY_EARTH, acceleration[1]
+				/ SensorManager.GRAVITY_EARTH, Color.parseColor("#33b5e5"));
 		rotationGauge.updateRotation(acceleration);
+	}
+
+	@Override
+	public void checkPlotPrefs()
+	{
+		readSensorPrefs();
+		updateSensorDelay();
+	}
+	
+	/**
+	 * Set the sensor delay based on user preferences. 0 = slow, 1 = medium, 2 =
+	 * fast.
+	 * 
+	 * @param position
+	 *            The desired sensor delay.
+	 */
+	private void setSensorDelay(int position)
+	{
+		switch (position)
+		{
+		case 0:
+
+			sensorManager.unregisterListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
+
+			// Register for sensor updates.
+			sensorManager.registerListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+					SensorManager.SENSOR_DELAY_NORMAL);
+			break;
+		case 1:
+
+			sensorManager.unregisterListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
+
+			// Register for sensor updates.
+			sensorManager.registerListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+					SensorManager.SENSOR_DELAY_GAME);
+			break;
+		case 2:
+
+			sensorManager.unregisterListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
+
+			// Register for sensor updates.
+			sensorManager.registerListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+					SensorManager.SENSOR_DELAY_FASTEST);
+			break;
+		}
+	}
+
+	/**
+	 * Updates the sensor delay based on the user preference. 0 = slow, 1 =
+	 * medium, 2 = fast.
+	 */
+	private void updateSensorDelay()
+	{
+		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_SLOW))
+		{
+			setSensorDelay(0);
+		}
+
+		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_MEDIUM))
+		{
+			setSensorDelay(1);
+		}
+
+		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_FAST))
+		{
+			setSensorDelay(2);
+		}
+	}
+	
+	/**
+	 * Read in the current user preferences.
+	 */
+	private void readSensorPrefs()
+	{
+		SharedPreferences prefs = this.getSharedPreferences(
+				PrefUtils.SENSOR_PREFS, Activity.MODE_PRIVATE);
+
+		this.frequencySelection = prefs.getString(
+				PrefUtils.SENSOR_FREQUENCY_PREF,
+				PrefUtils.SENSOR_FREQUENCY_FAST);
 	}
 }
