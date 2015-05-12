@@ -4,25 +4,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Calendar;
 
-import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -37,21 +30,12 @@ import android.widget.Toast;
 import com.androidplot.xy.XYPlot;
 import com.kircherelectronics.accelerationexplorer.R;
 import com.kircherelectronics.accelerationexplorer.activity.config.FilterConfigActivity;
-import com.kircherelectronics.accelerationexplorer.filter.ImuLaCfOrientation;
-import com.kircherelectronics.accelerationexplorer.filter.ImuLaCfQuaternion;
-import com.kircherelectronics.accelerationexplorer.filter.ImuLaCfRotationMatrix;
-import com.kircherelectronics.accelerationexplorer.filter.ImuLinearAccelerationInterface;
-import com.kircherelectronics.accelerationexplorer.filter.LowPassFilterLinearAccel;
-import com.kircherelectronics.accelerationexplorer.filter.LowPassFilterSmoothing;
-import com.kircherelectronics.accelerationexplorer.filter.MeanFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.plot.DynamicLinePlot;
 import com.kircherelectronics.accelerationexplorer.plot.PlotColor;
-import com.kircherelectronics.accelerationexplorer.plot.PlotPrefCallback;
-import com.kircherelectronics.accelerationexplorer.prefs.PrefUtils;
 
 /*
  * Acceleration Explorer
- * Copyright (C) 2013-2014, Kaleb Kircher - Kircher Engineering, LLC
+ * Copyright (C) 2013-2015, Kaleb Kircher - Kircher Engineering, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,8 +60,7 @@ import com.kircherelectronics.accelerationexplorer.prefs.PrefUtils;
  * @author Kaleb
  * @version %I%, %G%
  */
-public class LoggerActivity extends Activity implements SensorEventListener,
-		Runnable, OnTouchListener, PlotPrefCallback
+public class LoggerActivity extends FilterActivity implements Runnable
 {
 	private final static String tag = LoggerActivity.class.getSimpleName();
 
@@ -89,26 +72,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 	// Indicate if the output should be logged to a .csv file
 	private boolean logData = false;
 	private boolean dataReady = false;
-
-	private boolean meanFilterSmoothingEnabled;
-	private boolean lpfSmoothingEnabled;
-
-	private boolean lpfLinearAccelEnabled;
-	private boolean androidLinearAccelEnabled;
-
-	private boolean imuLaCfOrienationEnabled;
-	private boolean imuLaCfRotationMatrixEnabled;
-	private boolean imuLaCfQuaternionEnabled;
-
-	// Touch to zoom constants for the dynamicPlot
-	private float distance = 0;
-	private float zoom = 1.2f;
-
-	// Outputs for the acceleration and LPFs
-	private float[] acceleration = new float[3];
-	private float[] linearAcceleration = new float[3];
-	private float[] magnetic = new float[3];
-	private float[] rotation = new float[3];
 
 	// The generation of the log output
 	private int generation = 0;
@@ -124,28 +87,8 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 	// Graph plot for the UI outputs
 	private DynamicLinePlot dynamicPlot;
 
-	// Handler for the UI plots so everything plots smoothly
-	private Handler handler;
-
-	private MeanFilterSmoothing meanFilterAccelSmoothing;
-	private MeanFilterSmoothing meanFilterMagneticSmoothing;
-	private MeanFilterSmoothing meanFilterRotationSmoothing;
-
-	private LowPassFilterSmoothing lpfAccelSmoothing;
-	private LowPassFilterSmoothing lpfMagneticSmoothing;
-	private LowPassFilterSmoothing lpfRotationSmoothing;
-
-	private LowPassFilterLinearAccel lpfLinearAcceleration;
-
-	private ImuLinearAccelerationInterface imuLinearAcceleration;
-
 	// Plot colors
 	private PlotColor color;
-
-	private Runnable runable;
-
-	// Sensor manager to access the accelerometer sensor
-	private SensorManager sensorManager;
 
 	// Acceleration plot titles
 	private String plotAccelXAxisTitle = "AX";
@@ -154,13 +97,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 
 	// Output log
 	private String log;
-
-	private String frequencySelection;
-
-	// Acceleration UI outputs
-	private TextView textViewXAxis;
-	private TextView textViewYAxis;
-	private TextView textViewZAxis;
 
 	private Thread thread;
 
@@ -179,21 +115,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 		initPlots();
 		initStartButton();
 
-		meanFilterAccelSmoothing = new MeanFilterSmoothing();
-		meanFilterMagneticSmoothing = new MeanFilterSmoothing();
-		meanFilterRotationSmoothing = new MeanFilterSmoothing();
-
-		lpfAccelSmoothing = new LowPassFilterSmoothing();
-		lpfMagneticSmoothing = new LowPassFilterSmoothing();
-		lpfRotationSmoothing = new LowPassFilterSmoothing();
-
-		lpfLinearAcceleration = new LowPassFilterLinearAccel();
-
-		sensorManager = (SensorManager) this
-				.getSystemService(Context.SENSOR_SERVICE);
-
-		handler = new Handler();
-
 		runable = new Runnable()
 		{
 			@Override
@@ -201,8 +122,8 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 			{
 				handler.postDelayed(this, 100);
 
-				plotData();
 				updateAccelerationText();
+				plotData();
 			}
 		};
 	}
@@ -212,179 +133,9 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 	{
 		super.onPause();
 
-		sensorManager.unregisterListener(this);
-
 		stopDataLog();
-
-		handler.removeCallbacks(runable);
 	}
 
-	@Override
-	public void onResume()
-	{
-		super.onResume();
-
-		readSensorPrefs();
-
-		meanFilterSmoothingEnabled = getPrefMeanFilterSmoothingEnabled();
-
-		meanFilterAccelSmoothing
-				.setTimeConstant(getPrefMeanFilterSmoothingTimeConstant());
-		meanFilterMagneticSmoothing
-				.setTimeConstant(getPrefMeanFilterSmoothingTimeConstant());
-		meanFilterRotationSmoothing
-				.setTimeConstant(getPrefMeanFilterSmoothingTimeConstant());
-
-		lpfSmoothingEnabled = getPrefLpfSmoothingEnabled();
-
-		lpfAccelSmoothing.setTimeConstant(getPrefLpfSmoothingTimeConstant());
-		lpfMagneticSmoothing.setTimeConstant(getPrefLpfSmoothingTimeConstant());
-		lpfRotationSmoothing.setTimeConstant(getPrefLpfSmoothingTimeConstant());
-
-		lpfLinearAccelEnabled = getPrefLpfLinearAccelEnabled();
-		lpfLinearAcceleration
-				.setFilterCoefficient(getPrefLpfLinearAccelCoeff());
-
-		imuLaCfOrienationEnabled = getPrefImuLaCfOrientationEnabled();
-		imuLaCfRotationMatrixEnabled = getPrefImuLaCfRotationMatrixEnabled();
-
-		imuLaCfQuaternionEnabled = getPrefImuLaCfQuaternionEnabled();
-
-		if (imuLaCfOrienationEnabled)
-		{
-			imuLinearAcceleration = new ImuLaCfOrientation();
-			imuLinearAcceleration
-					.setFilterCoefficient(getPrefImuLaCfOrienationCoeff());
-		}
-		else if (imuLaCfRotationMatrixEnabled)
-		{
-			imuLinearAcceleration = new ImuLaCfRotationMatrix();
-			imuLinearAcceleration
-					.setFilterCoefficient(getPrefImuLaCfRotationMatrixCoeff());
-		}
-		else if (imuLaCfQuaternionEnabled)
-		{
-			imuLinearAcceleration = new ImuLaCfQuaternion();
-			imuLinearAcceleration
-					.setFilterCoefficient(getPrefImuLaCfQuaternionCoeff());
-		}
-
-		androidLinearAccelEnabled = getPrefAndroidLinearAccelEnabled();
-
-		handler.post(runable);
-
-		updateSensorDelay();
-	}
-
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy)
-	{
-
-	}
-
-	@Override
-	public void onSensorChanged(SensorEvent event)
-	{
-		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-		{
-			// Get a local copy of the sensor values
-			System.arraycopy(event.values, 0, acceleration, 0,
-					event.values.length);
-
-			if (meanFilterSmoothingEnabled)
-			{
-				acceleration = meanFilterAccelSmoothing
-						.addSamples(acceleration);
-			}
-
-			if (lpfSmoothingEnabled)
-			{
-				acceleration = lpfAccelSmoothing.addSamples(acceleration);
-			}
-
-			if (lpfLinearAccelEnabled)
-			{
-				linearAcceleration = lpfLinearAcceleration
-						.addSamples(acceleration);
-			}
-
-			if (imuLaCfOrienationEnabled || imuLaCfRotationMatrixEnabled
-					|| imuLaCfQuaternionEnabled)
-			{
-				imuLinearAcceleration.setAcceleration(acceleration);
-			}
-		}
-
-		if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)
-		{
-			// Get a local copy of the sensor values
-			System.arraycopy(event.values, 0, linearAcceleration, 0,
-					event.values.length);
-
-			if (meanFilterSmoothingEnabled)
-			{
-				linearAcceleration = meanFilterAccelSmoothing
-						.addSamples(linearAcceleration);
-			}
-
-			if (lpfSmoothingEnabled)
-			{
-				linearAcceleration = lpfAccelSmoothing
-						.addSamples(linearAcceleration);
-			}
-		}
-
-		if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-		{
-
-			// Get a local copy of the sensor values
-			System.arraycopy(event.values, 0, magnetic, 0, event.values.length);
-
-			if (meanFilterSmoothingEnabled)
-			{
-				magnetic = meanFilterMagneticSmoothing.addSamples(magnetic);
-			}
-
-			if (lpfSmoothingEnabled)
-			{
-				magnetic = lpfMagneticSmoothing.addSamples(magnetic);
-			}
-
-			if (imuLaCfOrienationEnabled || imuLaCfRotationMatrixEnabled
-					|| imuLaCfQuaternionEnabled)
-			{
-				imuLinearAcceleration.setMagnetic(magnetic);
-			}
-
-		}
-
-		if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE)
-		{
-			// Get a local copy of the sensor values
-			System.arraycopy(event.values, 0, rotation, 0, event.values.length);
-
-			if (meanFilterSmoothingEnabled)
-			{
-				rotation = meanFilterRotationSmoothing.addSamples(rotation);
-			}
-
-			if (lpfSmoothingEnabled)
-			{
-				rotation = lpfRotationSmoothing.addSamples(rotation);
-			}
-
-			if (imuLaCfOrienationEnabled || imuLaCfRotationMatrixEnabled
-					|| imuLaCfQuaternionEnabled)
-			{
-				imuLinearAcceleration.setGyroscope(rotation, System.nanoTime());
-
-				linearAcceleration = imuLinearAcceleration
-						.getLinearAcceleration();
-			}
-		}
-
-		dataReady = true;
-	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
@@ -416,43 +167,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 		default:
 			return super.onOptionsItemSelected(item);
 		}
-	}
-
-	/**
-	 * Pinch to zoom.
-	 */
-	@Override
-	public boolean onTouch(View v, MotionEvent e)
-	{
-		// MotionEvent reports input details from the touch screen
-		// and other input controls.
-		float newDist = 0;
-
-		switch (e.getAction())
-		{
-
-		case MotionEvent.ACTION_MOVE:
-
-			// pinch to zoom
-			if (e.getPointerCount() == 2)
-			{
-				if (distance == 0)
-				{
-					distance = fingerDist(e);
-				}
-
-				newDist = fingerDist(e);
-
-				zoom *= distance / newDist;
-
-				dynamicPlot.setMaxRange(zoom * Math.log(zoom));
-				dynamicPlot.setMinRange(-zoom * Math.log(zoom));
-
-				distance = newDist;
-			}
-		}
-
-		return false;
 	}
 
 	/**
@@ -498,139 +212,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 		dynamicPlot.addSeriesPlot(title, key, color);
 	}
 
-	private boolean getPrefAndroidLinearAccelEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs.getBoolean(
-				FilterConfigActivity.ANDROID_LINEAR_ACCEL_ENABLED_KEY, false);
-	}
-
-	private boolean getPrefImuLaCfOrientationEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs.getBoolean(
-				FilterConfigActivity.IMULACF_ORIENTATION_ENABLED_KEY, false);
-	}
-
-	private boolean getPrefImuLaCfRotationMatrixEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs
-				.getBoolean(
-						FilterConfigActivity.IMULACF_ROTATION_MATRIX_ENABLED_KEY,
-						false);
-	}
-
-	private boolean getPrefImuLaCfQuaternionEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs.getBoolean(
-				FilterConfigActivity.IMULACF_QUATERNION_ENABLED_KEY, false);
-	}
-
-	private boolean getPrefLpfLinearAccelEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs.getBoolean(
-				FilterConfigActivity.LPF_LINEAR_ACCEL_ENABLED_KEY, false);
-	}
-
-	private float getPrefLpfLinearAccelCoeff()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return Float.valueOf(prefs.getString(
-				FilterConfigActivity.LPF_LINEAR_ACCEL_COEFF_KEY, "0.5"));
-	}
-
-	private float getPrefImuLaCfOrienationCoeff()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return Float.valueOf(prefs.getString(
-				FilterConfigActivity.IMULACF_ORIENTATION_COEFF_KEY, "0.5"));
-	}
-
-	private float getPrefImuLaCfRotationMatrixCoeff()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return Float.valueOf(prefs.getString(
-				FilterConfigActivity.IMULACF_ROTATION_MATRIX_COEFF_KEY, "0.5"));
-	}
-
-	private float getPrefImuLaCfQuaternionCoeff()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return Float.valueOf(prefs.getString(
-				FilterConfigActivity.IMULACF_QUATERNION_COEFF_KEY, "0.5"));
-	}
-
-	private boolean getPrefLpfSmoothingEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs.getBoolean(FilterConfigActivity.LPF_SMOOTHING_ENABLED_KEY,
-				false);
-	}
-
-	private float getPrefLpfSmoothingTimeConstant()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return Float.valueOf(prefs.getString(
-				FilterConfigActivity.LPF_SMOOTHING_TIME_CONSTANT_KEY, "0.5"));
-	}
-
-	private boolean getPrefMeanFilterSmoothingEnabled()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return prefs.getBoolean(
-				FilterConfigActivity.MEAN_FILTER_SMOOTHING_ENABLED_KEY, false);
-	}
-
-	private float getPrefMeanFilterSmoothingTimeConstant()
-	{
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(getApplicationContext());
-
-		return Float.valueOf(prefs.getString(
-				FilterConfigActivity.MEAN_FILTER_SMOOTHING_TIME_CONSTANT_KEY,
-				"0.5"));
-	}
-
-	/**
-	 * Get the distance between fingers for the touch to zoom.
-	 * 
-	 * @param event
-	 * @return
-	 */
-	private final float fingerDist(MotionEvent event)
-	{
-		float x = event.getX(0) - event.getX(1);
-		float y = event.getY(0) - event.getY(1);
-		return (float) Math.sqrt(x * x + y * y);
-	}
-
 	/**
 	 * Create the plot colors.
 	 */
@@ -649,7 +230,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 	private void initPlots()
 	{
 		View view = findViewById(R.id.acceleration_plot_layout);
-		view.setOnTouchListener(this);
 
 		// Create the graph plot
 		XYPlot plot = (XYPlot) findViewById(R.id.plot_sensor);
@@ -692,13 +272,52 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 	}
 
 	/**
+	 * Log output data to an external .csv file.
+	 */
+	private void logData()
+	{
+		if (logData && dataReady)
+		{
+			if (generation == 0)
+			{
+				logTime = System.currentTimeMillis();
+			}
+
+			log += generation++ + ",";
+
+			log += String.format("%.2f",
+					(System.currentTimeMillis() - logTime) / 1000.0f) + ",";
+
+			if (!lpfLinearAccelEnabled && !imuLaCfOrienationEnabled
+					&& !imuLaCfRotationMatrixEnabled
+					&& !imuLaCfQuaternionEnabled && !androidLinearAccelEnabled
+					&& !imuLaKfQuaternionEnabled)
+			{
+				log += acceleration[0] + ",";
+				log += acceleration[1] + ",";
+				log += acceleration[2] + ",";
+			}
+			else
+			{
+				log += linearAcceleration[0] + ",";
+				log += linearAcceleration[1] + ",";
+				log += linearAcceleration[2] + ",";
+			}
+
+			log += System.getProperty("line.separator");
+
+			dataReady = false;
+		}
+	}
+
+	/**
 	 * Plot the output data in the UI.
 	 */
 	private void plotData()
 	{
 		if (!lpfLinearAccelEnabled && !imuLaCfOrienationEnabled
 				&& !imuLaCfRotationMatrixEnabled && !imuLaCfQuaternionEnabled
-				&& !androidLinearAccelEnabled)
+				&& !androidLinearAccelEnabled && !imuLaKfQuaternionEnabled)
 		{
 			dynamicPlot.setData(acceleration[0], PLOT_ACCEL_X_AXIS_KEY);
 			dynamicPlot.setData(acceleration[1], PLOT_ACCEL_Y_AXIS_KEY);
@@ -722,6 +341,22 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 	private void removeGraphPlot(int key)
 	{
 		dynamicPlot.removeSeriesPlot(key);
+	}
+
+	private void showHelpDialog()
+	{
+		Dialog helpDialog = new Dialog(this);
+
+		helpDialog.setCancelable(true);
+		helpDialog.setCanceledOnTouchOutside(true);
+		helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+		View view = getLayoutInflater().inflate(R.layout.layout_help_logger,
+				null);
+
+		helpDialog.setContentView(view);
+
+		helpDialog.show();
 	}
 
 	/**
@@ -782,44 +417,6 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 			thread.interrupt();
 
 			thread = null;
-		}
-	}
-
-	/**
-	 * Log output data to an external .csv file.
-	 */
-	private void logData()
-	{
-		if (logData && dataReady)
-		{
-			if (generation == 0)
-			{
-				logTime = System.currentTimeMillis();
-			}
-
-			log += generation++ + ",";
-
-			log += String.format("%.2f",
-					(System.currentTimeMillis() - logTime) / 1000.0f) + ",";
-
-			if (!lpfLinearAccelEnabled && !imuLaCfOrienationEnabled
-					&& !imuLaCfRotationMatrixEnabled
-					&& !imuLaCfQuaternionEnabled && !androidLinearAccelEnabled)
-			{
-				log += acceleration[0] + ",";
-				log += acceleration[1] + ",";
-				log += acceleration[2] + ",";
-			}
-			else
-			{
-				log += linearAcceleration[0] + ",";
-				log += linearAcceleration[1] + ",";
-				log += linearAcceleration[2] + ",";
-			}
-
-			log += System.getProperty("line.separator");
-
-			dataReady = false;
 		}
 	}
 
@@ -891,201 +488,4 @@ public class LoggerActivity extends Activity implements SensorEventListener,
 		}
 	}
 
-	/**
-	 * Update the acceleration sensor output Text Views.
-	 */
-	private void updateAccelerationText()
-	{
-		if (!lpfLinearAccelEnabled && !imuLaCfOrienationEnabled
-				&& !imuLaCfRotationMatrixEnabled && !imuLaCfQuaternionEnabled
-				&& !androidLinearAccelEnabled)
-		{
-			// Update the acceleration data
-			textViewXAxis.setText(String.format("%.2f", acceleration[0]));
-			textViewYAxis.setText(String.format("%.2f", acceleration[1]));
-			textViewZAxis.setText(String.format("%.2f", acceleration[2]));
-		}
-		else
-		{
-			// Update the acceleration data
-			textViewXAxis.setText(String.format("%.2f", linearAcceleration[0]));
-			textViewYAxis.setText(String.format("%.2f", linearAcceleration[1]));
-			textViewZAxis.setText(String.format("%.2f", linearAcceleration[2]));
-		}
-	}
-
-	@Override
-	public void checkPlotPrefs()
-	{
-		readSensorPrefs();
-		updateSensorDelay();
-	}
-
-	/**
-	 * Set the sensor delay based on user preferences. 0 = slow, 1 = medium, 2 =
-	 * fast.
-	 * 
-	 * @param position
-	 *            The desired sensor delay.
-	 */
-	private void setSensorDelay(int position)
-	{
-		switch (position)
-		{
-		case 0:
-
-			if (!androidLinearAccelEnabled)
-			{
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-						SensorManager.SENSOR_DELAY_NORMAL);
-			}
-			else
-			{
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),
-						SensorManager.SENSOR_DELAY_NORMAL);
-			}
-
-			if ((imuLaCfOrienationEnabled || imuLaCfRotationMatrixEnabled || imuLaCfQuaternionEnabled)
-					&& !androidLinearAccelEnabled)
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-						SensorManager.SENSOR_DELAY_NORMAL);
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this,
-						sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-						SensorManager.SENSOR_DELAY_NORMAL);
-			}
-
-			break;
-		case 1:
-
-			if (!androidLinearAccelEnabled)
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-						SensorManager.SENSOR_DELAY_GAME);
-			}
-			else
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),
-						SensorManager.SENSOR_DELAY_GAME);
-			}
-
-			if ((imuLaCfOrienationEnabled || imuLaCfRotationMatrixEnabled || imuLaCfQuaternionEnabled)
-					&& !androidLinearAccelEnabled)
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-						SensorManager.SENSOR_DELAY_GAME);
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this,
-						sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-						SensorManager.SENSOR_DELAY_GAME);
-			}
-
-			break;
-		case 2:
-
-			if (!androidLinearAccelEnabled)
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-						SensorManager.SENSOR_DELAY_FASTEST);
-			}
-			else
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),
-						SensorManager.SENSOR_DELAY_FASTEST);
-			}
-
-			if ((imuLaCfOrienationEnabled || imuLaCfRotationMatrixEnabled || imuLaCfQuaternionEnabled)
-					&& !androidLinearAccelEnabled)
-			{
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this, sensorManager
-						.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-						SensorManager.SENSOR_DELAY_FASTEST);
-
-				// Register for sensor updates.
-				sensorManager.registerListener(this,
-						sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-						SensorManager.SENSOR_DELAY_FASTEST);
-			}
-
-			break;
-		}
-	}
-
-	/**
-	 * Read in the current user preferences.
-	 */
-	private void readSensorPrefs()
-	{
-		SharedPreferences prefs = this.getSharedPreferences(
-				PrefUtils.SENSOR_PREFS, Activity.MODE_PRIVATE);
-
-		this.frequencySelection = prefs.getString(
-				PrefUtils.SENSOR_FREQUENCY_PREF,
-				PrefUtils.SENSOR_FREQUENCY_FAST);
-	}
-
-	private void showHelpDialog()
-	{
-		Dialog helpDialog = new Dialog(this);
-
-		helpDialog.setCancelable(true);
-		helpDialog.setCanceledOnTouchOutside(true);
-		helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-		View view = getLayoutInflater().inflate(R.layout.layout_help_logger,
-				null);
-
-		helpDialog.setContentView(view);
-
-		helpDialog.show();
-	}
-
-	/**
-	 * Updates the sensor delay based on the user preference. 0 = slow, 1 =
-	 * medium, 2 = fast.
-	 */
-	private void updateSensorDelay()
-	{
-		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_SLOW))
-		{
-			setSensorDelay(0);
-		}
-
-		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_MEDIUM))
-		{
-			setSensorDelay(1);
-		}
-
-		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_FAST))
-		{
-			setSensorDelay(2);
-		}
-	}
 }

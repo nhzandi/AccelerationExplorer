@@ -28,6 +28,7 @@ import com.kircherelectronics.accelerationexplorer.activity.config.FilterConfigA
 import com.kircherelectronics.accelerationexplorer.activity.config.NoiseConfigActivity;
 import com.kircherelectronics.accelerationexplorer.filter.LowPassFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.filter.MeanFilterSmoothing;
+import com.kircherelectronics.accelerationexplorer.filter.MedianFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.plot.DynamicBarPlot;
 
 public class NoiseActivity extends Activity implements SensorEventListener
@@ -41,6 +42,7 @@ public class NoiseActivity extends Activity implements SensorEventListener
 	private final static int BAR_PLOT_ACCEL_KEY = 0;
 	private final static int BAR_PLOT_LPF_KEY = 1;
 	private final static int BAR_PLOT_MEAN_KEY = 2;
+	private final static int BAR_PLOT_MEDIAN_KEY = 3;
 
 	public static int STD_DEV_SAMPLE_WINDOW = 20;
 
@@ -48,11 +50,13 @@ public class NoiseActivity extends Activity implements SensorEventListener
 	private float[] acceleration = new float[3];
 	private float[] lpfOutput = new float[3];
 	private float[] meanFilterOutput = new float[3];
+	private float[] medianFilterOutput = new float[3];
 
 	// RMS Noise levels
 	private DescriptiveStatistics stdDevMaginitudeAccel;
-	private DescriptiveStatistics stdDevMaginitude;
+	private DescriptiveStatistics stdDevMaginitudeLpf;
 	private DescriptiveStatistics stdDevMaginitudeMean;
+	private DescriptiveStatistics stdDevMaginitudeMedian;
 
 	private DynamicBarPlot barPlot;
 
@@ -64,6 +68,8 @@ public class NoiseActivity extends Activity implements SensorEventListener
 
 	// Mean filter
 	private MeanFilterSmoothing meanFilter;
+
+	private MedianFilterSmoothing medianFilter;
 
 	private Runnable runable;
 
@@ -96,6 +102,7 @@ public class NoiseActivity extends Activity implements SensorEventListener
 
 		lpf = new LowPassFilterSmoothing();
 		meanFilter = new MeanFilterSmoothing();
+		medianFilter = new MedianFilterSmoothing();
 
 		initStatistics();
 
@@ -143,9 +150,9 @@ public class NoiseActivity extends Activity implements SensorEventListener
 
 			// Log the data
 		case R.id.menu_settings_help:
-			
+
 			showHelpDialog();
-			
+
 			return true;
 
 		default:
@@ -170,11 +177,14 @@ public class NoiseActivity extends Activity implements SensorEventListener
 
 		sensorManager.registerListener(this,
 				sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-				SensorManager.SENSOR_DELAY_NORMAL);
+				SensorManager.SENSOR_DELAY_FASTEST);
 
 		lpf.setTimeConstant(getPrefLpfSmoothingTimeConstant());
 
 		meanFilter.setTimeConstant(getPrefMeanFilterSmoothingTimeConstant());
+
+		medianFilter
+				.setTimeConstant(getPrefMedianFilterSmoothingTimeConstant());
 
 		handler.post(runable);
 	}
@@ -188,6 +198,8 @@ public class NoiseActivity extends Activity implements SensorEventListener
 		lpfOutput = lpf.addSamples(acceleration);
 
 		meanFilterOutput = meanFilter.addSamples(acceleration);
+
+		medianFilterOutput = medianFilter.addSamples(acceleration);
 	}
 
 	@Override
@@ -215,6 +227,16 @@ public class NoiseActivity extends Activity implements SensorEventListener
 				"1"));
 	}
 
+	private float getPrefMedianFilterSmoothingTimeConstant()
+	{
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(getApplicationContext());
+
+		return Float.valueOf(prefs.getString(
+				NoiseConfigActivity.MEDIAN_FILTER_SMOOTHING_TIME_CONSTANT_KEY,
+				"1"));
+	}
+
 	/**
 	 * Initialize the statistics.
 	 */
@@ -224,13 +246,16 @@ public class NoiseActivity extends Activity implements SensorEventListener
 		stdDevMaginitudeAccel = new DescriptiveStatistics();
 		stdDevMaginitudeAccel.setWindowSize(STD_DEV_SAMPLE_WINDOW);
 
-		stdDevMaginitude = new DescriptiveStatistics();
-		stdDevMaginitude.setWindowSize(STD_DEV_SAMPLE_WINDOW);
+		stdDevMaginitudeLpf = new DescriptiveStatistics();
+		stdDevMaginitudeLpf.setWindowSize(STD_DEV_SAMPLE_WINDOW);
 
 		stdDevMaginitudeMean = new DescriptiveStatistics();
 		stdDevMaginitudeMean.setWindowSize(STD_DEV_SAMPLE_WINDOW);
+
+		stdDevMaginitudeMedian = new DescriptiveStatistics();
+		stdDevMaginitudeMedian.setWindowSize(STD_DEV_SAMPLE_WINDOW);
 	}
-	
+
 	private void showHelpDialog()
 	{
 		Dialog helpDialog = new Dialog(this);
@@ -239,10 +264,11 @@ public class NoiseActivity extends Activity implements SensorEventListener
 		helpDialog.setCanceledOnTouchOutside(true);
 		helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-		View view = getLayoutInflater().inflate(R.layout.layout_help_noise, null);
+		View view = getLayoutInflater().inflate(R.layout.layout_help_noise,
+				null);
 
 		helpDialog.setContentView(view);
-		
+
 		helpDialog.show();
 	}
 
@@ -251,7 +277,7 @@ public class NoiseActivity extends Activity implements SensorEventListener
 	 */
 	private void updateBarPlot()
 	{
-		Number[] seriesNumbers = new Number[3];
+		Number[] seriesNumbers = new Number[4];
 
 		stdDevMaginitudeAccel.addValue(Math.sqrt(Math.pow(acceleration[0], 2)
 				+ Math.pow(acceleration[1], 2) + Math.pow(acceleration[2], 2)));
@@ -265,10 +291,10 @@ public class NoiseActivity extends Activity implements SensorEventListener
 
 		seriesNumbers[BAR_PLOT_ACCEL_KEY] = var;
 
-		stdDevMaginitude.addValue(Math.sqrt(Math.pow(lpfOutput[0], 2)
+		stdDevMaginitudeLpf.addValue(Math.sqrt(Math.pow(lpfOutput[0], 2)
 				+ Math.pow(lpfOutput[1], 2) + Math.pow(lpfOutput[2], 2)));
 
-		var = stdDevMaginitude.getStandardDeviation();
+		var = stdDevMaginitudeLpf.getStandardDeviation();
 
 		if (var > MAX_NOISE_THRESHOLD)
 		{
@@ -290,6 +316,19 @@ public class NoiseActivity extends Activity implements SensorEventListener
 		}
 
 		seriesNumbers[BAR_PLOT_MEAN_KEY] = var;
+
+		stdDevMaginitudeMedian.addValue(Math.abs(medianFilterOutput[0])
+				+ Math.abs(medianFilterOutput[1])
+				+ Math.abs(medianFilterOutput[2]));
+
+		var = stdDevMaginitudeMedian.getStandardDeviation();
+
+		if (var > MAX_NOISE_THRESHOLD)
+		{
+			var = MAX_NOISE_THRESHOLD;
+		}
+
+		seriesNumbers[BAR_PLOT_MEDIAN_KEY] = var;
 
 		barPlot.onDataAvailable(seriesNumbers);
 	}

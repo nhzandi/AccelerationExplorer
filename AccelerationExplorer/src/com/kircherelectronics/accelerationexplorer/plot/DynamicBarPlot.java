@@ -97,7 +97,7 @@ public class DynamicBarPlot
 								153, 204)));
 
 		// This needs to be changed with the number of plots, must be >= 1
-		plot.setDomainStepValue(3);
+		plot.setDomainStepValue(4);
 
 		plot.setRangeStep(XYStepMode.INCREMENT_BY_VAL, .02);
 		plot.setRangeValueFormat(new DecimalFormat("#.###"));
@@ -259,6 +259,9 @@ public class DynamicBarPlot
 				break;
 			case 2:
 				toAppendTo.append("Mean");
+				break;
+			case 3:
+				toAppendTo.append("Median");
 				break;
 			default:
 				toAppendTo.append("Unknown");
