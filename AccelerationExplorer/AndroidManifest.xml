@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.kircherelectronics.accelerationexplorer"
-    android:versionCode="6"
-    android:versionName="3.0" >
+    android:versionCode="7"
+    android:versionName="3.1" >
 
     <uses-sdk
-        android:minSdkVersion="8"
-        android:targetSdkVersion="19" />
+        android:minSdkVersion="14"
+        android:targetSdkVersion="22" />
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/launcher_icon"
         android:label="@string/app_name" >
         <activity
-            android:name="com.kircherelectronics.accelerationexplorer.activity.AccelerationPlotActivity"
+            android:name="com.kircherelectronics.accelerationexplorer.activity.HomeActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/app_name"
             android:screenOrientation="portrait" >
@@ -28,14 +28,33 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.kircherelectronics.accelerationexplorer.activity.AccelerationDiagnosticActivity"
+            android:name="com.kircherelectronics.accelerationexplorer.activity.LoggerActivity"
             android:screenOrientation="portrait" >
         </activity>
         <activity
-            android:name="com.kircherelectronics.accelerationexplorer.activity.AccelerationVectorActivity"
+            android:name="com.kircherelectronics.accelerationexplorer.activity.DiagnosticActivity"
             android:screenOrientation="portrait" >
         </activity>
-
+        <activity
+            android:name="com.kircherelectronics.accelerationexplorer.activity.VectorActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="com.kircherelectronics.accelerationexplorer.activity.GaugeActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="com.kircherelectronics.accelerationexplorer.activity.NoiseActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="com.kircherelectronics.accelerationexplorer.activity.config.FilterConfigActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="com.kircherelectronics.accelerationexplorer.activity.config.NoiseConfigActivity"
+            android:screenOrientation="portrait" >
+        </activity>
     </application>
 
 </manifest>

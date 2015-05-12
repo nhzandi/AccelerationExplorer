@@ -22,7 +22,7 @@ import java.util.LinkedList;
 
 import org.apache.commons.math3.stat.StatUtils;
 
-import com.kircherelectronics.accelerationexplorer.activity.AccelerationDiagnosticActivity;
+import com.kircherelectronics.accelerationexplorer.activity.DiagnosticActivity;
 
 /**
  * An implementation to calculate variance from a rolling window.
@@ -56,7 +56,7 @@ public class Variance
 	 */
 	private void enforceWindow()
 	{
-		if (varianceList.size() > AccelerationDiagnosticActivity.getSampleWindow())
+		if (varianceList.size() > DiagnosticActivity.getSampleWindow())
 		{
 			varianceList.removeFirst();
 		}

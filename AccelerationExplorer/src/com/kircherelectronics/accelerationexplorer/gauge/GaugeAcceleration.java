@@ -8,6 +8,8 @@ import android.graphics.EmbossMaskFilter;
 import android.graphics.LinearGradient;
 import android.graphics.MaskFilter;
 import android.graphics.Paint;
+import android.graphics.PorterDuff.Mode;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.hardware.SensorManager;
@@ -23,7 +25,7 @@ import android.view.View;
  * Note that after Android 4.0 TextureView exists, as does SurfaceView for
  * Android 3.0 which won't hog the UI thread like View will. This should only be
  * used with devices or certain libraries that require View.
- *  
+ * 
  * @author Kaleb
  * @version %I%, %G%
  * @see http://developer.android.com/reference/android/view/View.html
@@ -87,7 +89,7 @@ public final class GaugeAcceleration extends View
 
 	private RectF faceRect;
 	private RectF rimRect;
-	//added by Scott
+	// added by Scott
 	private RectF rimOuterRect;
 	private RectF rimOuterTopRect;
 	private RectF rimOuterBottomRect;
@@ -103,6 +105,9 @@ public final class GaugeAcceleration extends View
 
 	private float x;
 	private float y;
+
+	private float scaleX;
+	private float scaleY;
 
 	private int color = 0;
 
@@ -154,13 +159,29 @@ public final class GaugeAcceleration extends View
 	 */
 	public void updatePoint(float x, float y, int color)
 	{
-		this.x = ((faceRect.right - faceRect.left) / (SensorManager.GRAVITY_EARTH * 0.5f))
-				* -x + faceRect.centerX();
-		this.y = ((faceRect.bottom - faceRect.top) / (SensorManager.GRAVITY_EARTH * 0.5f))
-				* y + faceRect.centerY();
+		// Enforce a limit of 1g or 9.8 m/s^2
+		if (x > SensorManager.GRAVITY_EARTH)
+		{
+			x = SensorManager.GRAVITY_EARTH;
+		}
+		if (x < -SensorManager.GRAVITY_EARTH)
+		{
+			x = -SensorManager.GRAVITY_EARTH;
+		}
+		if (y > SensorManager.GRAVITY_EARTH)
+		{
+			y = SensorManager.GRAVITY_EARTH;
+		}
+		if (y < -SensorManager.GRAVITY_EARTH)
+		{
+			y = -SensorManager.GRAVITY_EARTH;
+		}
+
+		this.x = scaleX * -x + rimRect.centerX();
+		this.y = scaleY * y + rimRect.centerY();
 
 		this.color = color;
-		
+
 		this.invalidate();
 	}
 
@@ -178,18 +199,21 @@ public final class GaugeAcceleration extends View
 	private void initDrawingTools()
 	{
 		rimRect = new RectF(0.1f, 0.1f, 0.9f, 0.9f);
-		
-		//inner rim oval
+
+		scaleX = ((rimRect.right - rimRect.left) / (SensorManager.GRAVITY_EARTH * 2));
+		scaleY = ((rimRect.bottom - rimRect.top) / (SensorManager.GRAVITY_EARTH * 2));
+
+		// inner rim oval
 		innerRim = new RectF(0.25f, 0.25f, 0.75f, 0.75f);
 
-		//inner most white dot
+		// inner most white dot
 		innerMostDot = new RectF(0.47f, 0.47f, 0.53f, 0.53f);
-				
+
 		// the linear gradient is a bit skewed for realism
 		rimPaint = new Paint();
 		rimPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 		rimPaint.setShader(new LinearGradient(0.40f, 0.0f, 0.60f, 1.0f, Color
-				.rgb(255, 255, 255), Color.rgb(255,255,255),
+				.rgb(255, 255, 255), Color.rgb(255, 255, 255),
 				Shader.TileMode.CLAMP));
 
 		float rimSize = 0.03f;
@@ -200,37 +224,47 @@ public final class GaugeAcceleration extends View
 		rimShadowPaint = new Paint();
 		rimShadowPaint.setStyle(Paint.Style.FILL);
 		rimShadowPaint.setAntiAlias(true);
+		rimShadowPaint.setXfermode(new PorterDuffXfermode(Mode.CLEAR)); 
 
-		//set the size of the outside white with the rectangles.
-		//a 'bigger' negative will increase the size.
+		// set the size of the outside white with the rectangles.
+		// a 'bigger' negative will increase the size.
 		float rimOuterSize = -0.04f;
 		rimOuterRect = new RectF();
-		rimOuterRect.set(rimRect.left + rimOuterSize, rimRect.top + rimOuterSize,
-				rimRect.right - rimOuterSize, rimRect.bottom - rimOuterSize);
-		
-		rimOuterTopRect = new RectF(0.5f, 0.116f, 0.5f, 0.07f);
-		rimOuterTopRect.set(rimOuterTopRect.left + rimOuterSize, rimOuterTopRect.top + rimOuterSize,
-				rimOuterTopRect.right - rimOuterSize, rimOuterTopRect.bottom - rimOuterSize);
-		
-		rimOuterBottomRect = new RectF(0.5f, 0.93f, 0.5f, 0.884f);
-		rimOuterBottomRect.set(rimOuterBottomRect.left + rimOuterSize, rimOuterBottomRect.top + rimOuterSize,
-				rimOuterBottomRect.right - rimOuterSize, rimOuterBottomRect.bottom - rimOuterSize);
-		
-		rimOuterLeftRect = new RectF(0.116f, 0.5f, 0.07f, 0.5f);
-		rimOuterLeftRect.set(rimOuterLeftRect.left + rimOuterSize, rimOuterLeftRect.top + rimOuterSize,
-				rimOuterLeftRect.right - rimOuterSize, rimOuterLeftRect.bottom - rimOuterSize);
-		
-		rimOuterRightRect = new RectF(0.93f, 0.5f, 0.884f, 0.5f);
-		rimOuterRightRect.set(rimOuterRightRect.left + rimOuterSize, rimOuterRightRect.top + rimOuterSize,
-				rimOuterRightRect.right - rimOuterSize, rimOuterRightRect.bottom - rimOuterSize);
+		rimOuterRect.set(rimRect.left + rimOuterSize, rimRect.top
+				+ rimOuterSize, rimRect.right - rimOuterSize, rimRect.bottom
+				- rimOuterSize);
 
-		//inner rim declarations the black oval/rect
+		rimOuterTopRect = new RectF(0.5f, 0.116f, 0.5f, 0.07f);
+		rimOuterTopRect.set(rimOuterTopRect.left + rimOuterSize,
+				rimOuterTopRect.top + rimOuterSize, rimOuterTopRect.right
+						- rimOuterSize, rimOuterTopRect.bottom - rimOuterSize);
+
+		rimOuterBottomRect = new RectF(0.5f, 0.93f, 0.5f, 0.884f);
+		rimOuterBottomRect.set(rimOuterBottomRect.left + rimOuterSize,
+				rimOuterBottomRect.top + rimOuterSize, rimOuterBottomRect.right
+						- rimOuterSize, rimOuterBottomRect.bottom
+						- rimOuterSize);
+
+		rimOuterLeftRect = new RectF(0.116f, 0.5f, 0.07f, 0.5f);
+		rimOuterLeftRect.set(rimOuterLeftRect.left + rimOuterSize,
+				rimOuterLeftRect.top + rimOuterSize, rimOuterLeftRect.right
+						- rimOuterSize, rimOuterLeftRect.bottom - rimOuterSize);
+
+		rimOuterRightRect = new RectF(0.93f, 0.5f, 0.884f, 0.5f);
+		rimOuterRightRect
+				.set(rimOuterRightRect.left + rimOuterSize,
+						rimOuterRightRect.top + rimOuterSize,
+						rimOuterRightRect.right - rimOuterSize,
+						rimOuterRightRect.bottom - rimOuterSize);
+
+		// inner rim declarations the black oval/rect
 		float rimInnerSize = 0.02f;
 		innerface = new RectF();
-		innerface.set(innerRim.left + rimInnerSize, innerRim.top + rimInnerSize,
-				innerRim.right - rimInnerSize, innerRim.bottom - rimInnerSize);
-		
-		//inner 4 small rectangles 
+		innerface.set(innerRim.left + rimInnerSize,
+				innerRim.top + rimInnerSize, innerRim.right - rimInnerSize,
+				innerRim.bottom - rimInnerSize);
+
+		// inner 4 small rectangles
 		rimInnerTopRect = new RectF(0.46f, 0.23f, 0.54f, 0.26f);
 		rimInnerBottomRect = new RectF(0.46f, 0.74f, 0.54f, 0.77f);
 		rimInnerLeftRect = new RectF(0.23f, 0.54f, 0.26f, 0.46f);
@@ -278,7 +312,8 @@ public final class GaugeAcceleration extends View
 		if (mode == MeasureSpec.AT_MOST || mode == MeasureSpec.EXACTLY)
 		{
 			return size;
-		} else
+		}
+		else
 		{ // (mode == MeasureSpec.UNSPECIFIED)
 			return getPreferredSize();
 		}
@@ -305,36 +340,36 @@ public final class GaugeAcceleration extends View
 		// first, draw the metallic body
 		canvas.drawOval(rimRect, rimPaint);
 		// now the outer rim circle
-		//canvas.drawOval(rimRect, rimCirclePaint);
-		
-		//top rect
+		// canvas.drawOval(rimRect, rimCirclePaint);
+
+		// top rect
 		canvas.drawRect(rimOuterTopRect, rimPaint);
-		//bottom rect
+		// bottom rect
 		canvas.drawRect(rimOuterBottomRect, rimPaint);
-		//left rect
+		// left rect
 		canvas.drawRect(rimOuterLeftRect, rimPaint);
-		//right rect
+		// right rect
 		canvas.drawRect(rimOuterRightRect, rimPaint);
-		
+
 		// draw the rim shadow inside the face
 		canvas.drawOval(faceRect, rimShadowPaint);
-		
-		//draw the inner white rim circle
+
+		// draw the inner white rim circle
 		canvas.drawOval(innerRim, rimPaint);
-		
-		//draw inner topRect
+
+		// draw inner topRect
 		canvas.drawRect(rimInnerTopRect, rimPaint);
-		//draw inner bottomRect
+		// draw inner bottomRect
 		canvas.drawRect(rimInnerBottomRect, rimPaint);
-		//draw inner leftrect
+		// draw inner leftrect
 		canvas.drawRect(rimInnerLeftRect, rimPaint);
-		//draw inner rightRect
+		// draw inner rightRect
 		canvas.drawRect(rimInnerRightRect, rimPaint);
-		
+
 		// draw the inner black oval
 		canvas.drawOval(innerface, rimShadowPaint);
-		
-		//draw inner white dot
+
+		// draw inner white dot
 		canvas.drawOval(innerMostDot, rimPaint);
 	}
 
@@ -362,12 +397,13 @@ public final class GaugeAcceleration extends View
 		if (background == null)
 		{
 			Log.w(tag, "Background not created");
-		} else
+		}
+		else
 		{
 			canvas.drawBitmap(background, 0, 0, backgroundPaint);
 		}
 	}
-	
+
 	@Override
 	protected void onDraw(Canvas canvas)
 	{
