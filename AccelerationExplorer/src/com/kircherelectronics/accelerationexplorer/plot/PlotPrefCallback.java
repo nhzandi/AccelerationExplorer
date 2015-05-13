@@ -2,7 +2,7 @@ package com.kircherelectronics.accelerationexplorer.plot;
 
 /*
  * Acceleration Explorer
- * Copyright (C) 2013-2014, Kaleb Kircher - Kircher Engineering, LLC
+ * Copyright (C) 2013-2015, Kaleb Kircher - Kircher Engineering, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@ package com.kircherelectronics.accelerationexplorer.plot;
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
  * An interface that allows preference dialogs to callback the Activity that
  * owns them with new preferences.

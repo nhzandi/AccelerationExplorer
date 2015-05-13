@@ -80,7 +80,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="There are two smoothing filters available. The first filter is a mean (averaging) filter that can be defined in terms of a time constant (the length of sensor data in terms of seconds). The second filter is a low-pass filter that can be defined in terms of a time constant (the length of sensor data in terms of seconds). A single filter, both filters or no filters can be used at any time. In general, the larger the time constant, the smoother the data will be. The side-effect is that the larger the time constant, the more lagged the data becomes."
+                android:text="There are three smoothing filters available. The first filter is a mean (averaging) filter that can be defined in terms of a time constant (the length of sensor data in terms of seconds). The second filter is a low-pass filter that can be defined in terms of a time constant (the length of sensor data in terms of seconds). The third filter is a median filter, also defined in terms of a time constant (units of seconds). A single filter, two filters three filters or no filters can be used at any time. In general, the larger the time constant, the smoother the data will be. The side-effect is that the larger the time constant, the more lagged the data becomes."
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:textColor="#fff" />
 

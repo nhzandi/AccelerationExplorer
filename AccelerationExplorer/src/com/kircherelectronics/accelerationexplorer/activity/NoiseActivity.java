@@ -31,6 +31,33 @@ import com.kircherelectronics.accelerationexplorer.filter.MeanFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.filter.MedianFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.plot.DynamicBarPlot;
 
+/*
+ * Acceleration Explorer
+ * Copyright (C) 2013-2015, Kaleb Kircher - Kircher Engineering, LLC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * A class intended to measure the noise of the sensor in terms
+ * root-mean-squared (RMS). Effectively, the average deviation from the mean of
+ * the sensor outputs. Multiple smoothing filters are applied simultaneously to
+ * the raw sensor output and can be compared via a bar chart.
+ * 
+ * @author Kaleb
+ *
+ */
 public class NoiseActivity extends Activity implements SensorEventListener
 {
 	private final static String tag = NoiseActivity.class.getSimpleName();

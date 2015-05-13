@@ -2,7 +2,7 @@ package com.kircherelectronics.accelerationexplorer.prefs;
 
 /*
  * Acceleration Explorer
- * Copyright (C) 2013-2014, Kaleb Kircher - Kircher Engineering, LLC
+ * Copyright (C) 2013-2015, Kaleb Kircher - Kircher Engineering, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

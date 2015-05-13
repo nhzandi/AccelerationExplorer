@@ -42,7 +42,7 @@ import android.content.Context;
 
 /*
  * Acceleration Explorer
- * Copyright (C) 2013, Kaleb Kircher - Boki Software, Kircher Engineering, LLC
+ * Copyright (C) 2013-2015, Kaleb Kircher - Kircher Engineering, LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,8 @@ import android.content.Context;
 
 /**
  * AccelerationActivity will measure the negative and positive x, y and z axes
- * of from an Android device accelerometer sensor.
+ * of from an Android device accelerometer sensor. This provides a measurement
+ * of sensor offset, skew, noise and output frequency.
  * 
  * @author Kaleb
  * @version %I%, %G%
@@ -102,7 +103,7 @@ public class DiagnosticActivity extends Activity implements
 	private boolean running = false;
 	// Indicates true if samples have been recorded successfully
 	private boolean finished = false;
-	
+
 	// The number of updates per second, i.e sample frequency. The inverse, ie
 	// 1/frequency is
 	// the sample period.
@@ -115,7 +116,7 @@ public class DiagnosticActivity extends Activity implements
 	// Keep track of the sample frequency
 	private float time = System.nanoTime();
 	private float timeOld = System.nanoTime();
-	
+
 	// The event timestamps for the sample updates are erratic, so we average by
 	// dividing total time by the number of samples with is much more stable.
 	private int count = 0;
@@ -129,12 +130,12 @@ public class DiagnosticActivity extends Activity implements
 	// Format the output
 	private DecimalFormat df = new DecimalFormat("#.##");
 	private DecimalFormat dfLong = new DecimalFormat("#.####");
-	
+
 	private GaugeAcceleration accelerationGauge;
 
 	// View for the phone orientation images
 	private ImageView imageViewPhone;
-	
+
 	private MeanFilterSmoothing meanFilter;
 
 	// State managers manage almost all of the state for each set of samples
@@ -174,8 +175,8 @@ public class DiagnosticActivity extends Activity implements
 				SensorManager.SENSOR_DELAY_FASTEST);
 
 		vibe = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-		
-		meanFilter = new MeanFilterSmoothing(); 
+
+		meanFilter = new MeanFilterSmoothing();
 		meanFilter.setTimeConstant(0.2f);
 	}
 
@@ -213,13 +214,14 @@ public class DiagnosticActivity extends Activity implements
 			frequency = count++ / ((time - timeOld) / 1000000000.0);
 
 			acceleration = meanFilter.addSamples(acceleration);
-			
+
 			// Update the acceleration data
 			textViewXAxis.setText(String.format("%.2f", acceleration[0]));
 			textViewYAxis.setText(String.format("%.2f", acceleration[1]));
 			textViewZAxis.setText(String.format("%.2f", acceleration[2]));
-			
-			accelerationGauge.updatePoint(acceleration[0], acceleration[1], Color.rgb(255, 61, 0));
+
+			accelerationGauge.updatePoint(acceleration[0], acceleration[1],
+					Color.rgb(255, 61, 0));
 
 			// Attempt to sample the data
 			if (running)
@@ -505,7 +507,7 @@ public class DiagnosticActivity extends Activity implements
 		imageViewPhone = (ImageView) inputLayout
 				.findViewById(R.id.imageViewPhone);
 		imageViewPhone.setImageResource(R.drawable.phone);
-		
+
 		accelerationGauge = (GaugeAcceleration) inputLayout
 				.findViewById(R.id.gauge_acceleration);
 
@@ -872,10 +874,11 @@ public class DiagnosticActivity extends Activity implements
 		helpDialog.setCanceledOnTouchOutside(true);
 		helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-		View view = getLayoutInflater().inflate(R.layout.layout_help_diagnostic, null);
+		View view = getLayoutInflater().inflate(
+				R.layout.layout_help_diagnostic, null);
 
 		helpDialog.setContentView(view);
-		
+
 		helpDialog.show();
 	}
 }

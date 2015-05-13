@@ -51,6 +51,13 @@ import android.widget.TextView;
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * A class that displays the acceleration sensor output in terms of tilt and
+ * acceleration relative to gravity of earth.
+ * 
+ * @author Kaleb
+ *
+ */
 public class GaugeActivity extends FilterActivity
 {
 	private GaugeAcceleration gaugeAcceleration;
