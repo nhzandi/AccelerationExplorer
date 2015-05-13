@@ -21,7 +21,13 @@ The logger provides a real-time plot of the X, Y and Z axis of the acceleration 
 
 ![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/acceleration_explorer_vector.png "Android Acceleration Explorer Screenshot")
 
-The vector plots the acceleration as a vector (a line with a direction and magnitude) in the x and y axis. The maximum magnitude (length) of the vector is limited to 1g, or 9.8 meters/sec^2.
+The vector plots the acceleration as a vector (a line with a direction and magnitude) in the x and y axis. The maximum magnitude (length) of the vector is limited to 1g, or 9.8 meters/sec^2. All of the smoothing filters and linear acceleration filters can be applied to the acceleration sensor data.
+
+### The Gauges
+
+![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/acceleration_explorer_gauges.png "Android Acceleration Explorer Screenshot")
+
+The gauges plot the acceleration of the x and y axis in terms of tilt and acceleration relative to 1g, or 9.8 meters/sec^2. One of the key limitations of acceleration sensors is the inability to differentiate tilt from linear acceleration.
 
 The acceleration sensor outputs can also be logged to a .CSV file and be opened in any spreedsheet application. This allows the user to record the acceleration of any object the Android device is attached to. Analog gauges of the magnitude of the acceleration and rotation of the device are also displayed to help further visualize the acceleration sensor outputs.
 
