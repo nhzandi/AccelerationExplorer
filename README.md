@@ -76,9 +76,21 @@ The Noise Activity within Acceleration Explorer will compare the root-mean-sqaur
 
 Acceleration Explorer offers a number of different linear acceleration filters. Linear acceleration is defined as linearAcceleration = (acceleration - gravity). An acceleration sensor is not capable of determining the differnce between gravity/tilt and true linear acceleration. There is one standalone approach, a low-pass filter, and many sensor fusion based approaches. Acceleration Explorer offers implementations of all the common linear acceleration filters as well as the Android API implementation.
 
+### Android Linear Acceleration
+
+Android offers its own implementation of linear acceleration with Sensor.TYPE_LINEAR_ACCELERATION, which is supported by Acceleration Explorer. Most of the time the device must have a gyroscope for this sensor type to be supported. However, some devices implement Sensor.TYPE_LINEAR_ACCELERATION without a gyroscope, presumably with a low-pass filter. Regaurdless of the underlying impelementation, I have found that Sensor.TYPE_LINEAR_ACCELERATION works well for short periods of linear acceleration, but not for long periods (more than a few seconds).
+
+To illustrate the shortcomings of Sensor.TYPE_LINEAR_ACCELERATION, I mounted a Nexus 5 in a vehicle such that the measured axis was parallel and level to the vehicle. This allowed me to measure the actual acceleration of the vechicle as accuratly as possible. I measured the acceleration of a car with Sensor.TYPE_ACCELERATION and Sensor.TYPE_LINEAR_ACCELERATION simultaneously. You can see that the linear acceleration estimation begins to deviate heavily from the actual acceleration after a short peroid of time (or our best estimation of it). I presume this is because deep under the hood of the linear acceleration algorithm, a gyroscope is used to estimation the orientation of the device, which then calculates the gravity vector which is then subtracted from the acceleration to produce linear acceleration. I suspect the deviation occurs because the acceleration sensor is also used to compenstate the drift of the gyroscope and under sustained periods of linear acceleration, the gyroscope begins to compensate for what it thinks is a long term gravity signal, but is really sustained linear acceleration.
+
+![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/android_linear_acceleration_comparison.png "Android Linear Acceleration vs Raw Acceleration")
+
 ### Low-Pass Linear Acceleration
 
 The most simple linear acceleration filter is based on a low-pass filter. It has the advantage that no other sensors are requied to estimate linear acceleration. A low-pass filter is implemented in such a way that only very long term (low-frequency) signals (i.e, gravity) are allow to pass through. Anything short term (high-frequency) is filtered out. The gravity estimation is then subtracted from the current acceleration sensor measurement, providing an estimation of linear acceleration. The low-pass filter is an IIR single-pole implementation. The coefficient, a (alpha), can be adjusted based on the sample period of the sensor to produce the desired time constant that the filter will act on. It is essentially the same as the Wikipedia LPF. It takes a simple form of gravity[0] = alpha * gravity[0] + (1 - alpha) * acceleration[0]. Alpha is defined as alpha = timeConstant / (timeConstant + dt) where the time constant is the length of signals the filter should act on and dt is the sample period (1/frequency) of the sensor. Linear acceleration can then be calculated as linearAcceleration = (acceleration - gravity). This implementation can work very well assuming the accleration sensor is mounted in a relativly fixed position and the periods of linear acceleration is relavitly short.
+
+### Sensor Fusion Complimentary Filter
+
+Acceleration Explorer off
 
 Useful Links:
 
