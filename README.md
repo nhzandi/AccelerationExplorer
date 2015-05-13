@@ -15,6 +15,13 @@ Acceleration Explorer has five main Activities. A logger view, a vector view, a 
 
 ![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/acceleration_explorer_logger.png "Android Acceleration Explorer Screenshot")
 
+The logger provides a real-time plot of the X, Y and Z axis of the acceleration sensor. You can also opt to log the sensor data to an external .CSV file. All of the smoothing filters and linear acceleration filters can be applied to the acceleration sensor data.
+
+### The Vector
+
+![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/acceleration_explorer_vector.png "Android Acceleration Explorer Screenshot")
+
+The vector plots the acceleration as a vector (a line with a direction and magnitude) in the x and y axis. The maximum magnitude (length) of the vector is limited to 1g, or 9.8 meters/sec^2.
 
 The acceleration sensor outputs can also be logged to a .CSV file and be opened in any spreedsheet application. This allows the user to record the acceleration of any object the Android device is attached to. Analog gauges of the magnitude of the acceleration and rotation of the device are also displayed to help further visualize the acceleration sensor outputs.
 
