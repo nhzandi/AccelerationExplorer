@@ -3,6 +3,8 @@ AccelerationExplorer
 
 ![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/acceleration_explorer_home.png "Android Acceleration Explorer Screenshot")
 
+# Introduction
+
 Acceleration Explorer is an open source Android application with two different purposes. The first purpose is to provide examples of how to implement the Android acceleration sensor and apply various smoothing and linear acceleration filters. The second purpose is a functioning application allowing teachers, students and hobbyists (who may not be interested in the code) to visualize the acceleration sensor's outputs and how different filters effect the outputs.
 
 The acceleration sensor outputs can also be logged to a .CSV file and be opened in any spreedsheet application. This allows the user to record the acceleration of any object the Android device is attached to. Analog gauges of the magnitude of the acceleration and rotation of the device are also displayed to help further visualize the acceleration sensor outputs.
