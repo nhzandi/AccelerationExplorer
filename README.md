@@ -90,7 +90,9 @@ The most simple linear acceleration filter is based on a low-pass filter. It has
 
 ### Sensor Fusion Complimentary Filter
 
-Acceleration Explorer off
+Acceleration Explorer offers a number of different estimations of linear acceleraiton using sensor fusion complimentary filters. The complementary filter is a frequency domain filter. In its strictest sense, the definition of a complementary filter refers to the use of two or more transfer functions, which are mathematical complements of one another. Thus, if the data from one sensor is operated on by G(s), then the data from the other sensor is operated on by I-G(s), and the sum of the transfer functions is I, the identity matrix. In practice, it looks nearly identical to a low-pass filter, but uses two different sets of sensor measurements to produce what can be thought of as a weighted estimation. 
+
+In most cases, the gyroscope is used to measure the devices orientation, which can then be used to produce a gravity vector, which can then be subracted from the acceleration vector to produce the linear acceleration vector. However, the gyrocope tends to drift due to round off errors and other factors. Most gyroscopes work by measuring very small vibrations in the earth's rotation, which means they really do not like external vibrations. Because of drift and external vibrations, the gyroscope has to be compensated with a second estimation of the devices orientation, which comes from the acceleration sensor and magnetic sensor. The acceleration sensor provides the pitch and roll estimations while the magnetic sensor provides the azimuth. A complimentary filter is used to fuse the two orienations together. It takes the form of gyro[0] = alpha * gyro[0] + (1 - alpha) * accel/magnetic[0]. Alpha is defined as alpha = timeConstant / (timeConstant + dt) where the time constant is the length of signals the filter should act on and dt is the sample period (1/frequency) of the sensor.
 
 Useful Links:
 
