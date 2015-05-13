@@ -74,7 +74,11 @@ The Noise Activity within Acceleration Explorer will compare the root-mean-sqaur
 
 ## Linear Acceleration
 
-Acceleration Explorer offers a number of different linear acceleration filters. Linear acceleration is defined as acceleration-gravity. An acceleration sensor is not capable of determining the differnce between gravity/tilt and linear acceleration. There is one standalone approach, a low-pass filter, and many sensor fusion based approaches. Acceleration Explorer offers implementations of all the common linear acceleration filters as well as the Android API implementation.
+Acceleration Explorer offers a number of different linear acceleration filters. Linear acceleration is defined as linearAcceleration = (acceleration - gravity). An acceleration sensor is not capable of determining the differnce between gravity/tilt and true linear acceleration. There is one standalone approach, a low-pass filter, and many sensor fusion based approaches. Acceleration Explorer offers implementations of all the common linear acceleration filters as well as the Android API implementation.
+
+### Low-Pass Linear Acceleration
+
+The most simple linear acceleration filter is based on a low-pass filter. It has the advantage that no other sensors are requied to estimate linear acceleration. A low-pass filter is implemented in such a way that only very long term (low-frequency) signals (i.e, gravity) are allow to pass through. Anything short term (high-frequency) is filtered out. The gravity estimation is then subtracted from the current acceleration sensor measurement, providing an estimation of linear acceleration. The low-pass filter is an IIR single-pole implementation. The coefficient, a (alpha), can be adjusted based on the sample period of the sensor to produce the desired time constant that the filter will act on. It is essentially the same as the Wikipedia LPF. It takes a simple form of gravity[0] = alpha * gravity[0] + (1 - alpha) * acceleration[0]. Alpha is defined as alpha = timeConstant / (timeConstant + dt) where the time constant is the length of signals the filter should act on and dt is the sample period (1/frequency) of the sensor. Linear acceleration can then be calculated as linearAcceleration = (acceleration - gravity). This implementation can work very well assuming the accleration sensor is mounted in a relativly fixed position and the periods of linear acceleration is relavitly short.
 
 Useful Links:
 
