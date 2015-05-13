@@ -70,7 +70,11 @@ Acceleration Explorer usees a median filter designed to smooth the data points b
 
 ### Comparing Smoothing Filter Performance
 
-The Noise Activity within Acceleration Explorer will compare the root-mean-sqaured (RMS) average of all three filters and the raw sensor output in real-time. THe RMS is the average variance from the mean of the sensor output. This allows users to quickly configure and compare the performance of different smoothing filters simultaneously. In general, I feel the mean filter offers the best compromise between smoothing and response of the three filters.
+The Noise Activity within Acceleration Explorer will compare the root-mean-sqaured (RMS) average of all three filters and the raw sensor output in real-time. THe RMS is the average variance from the mean of the sensor output. This allows users to quickly configure and compare the performance of different smoothing filters simultaneously.
+
+## Linear Acceleration
+
+Acceleration Explorer offers a number of different linear acceleration filters. Linear acceleration is defined as acceleration-gravity. An acceleration sensor is not capable of determining the differnce between gravity/tilt and linear acceleration. There is one standalone approach, a low-pass filter, and many sensor fusion based approaches. Acceleration Explorer offers implementations of all the common linear acceleration filters as well as the Android API implementation.
 
 Useful Links:
 
