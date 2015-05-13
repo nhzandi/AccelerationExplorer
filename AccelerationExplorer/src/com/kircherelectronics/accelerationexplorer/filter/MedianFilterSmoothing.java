@@ -26,7 +26,7 @@ import org.apache.commons.math3.stat.StatUtils;
 
 /**
  * Implements a median filter designed to smooth the data points based on a time
- * constant in units of seconds. The median filter will take the mean of the
+ * constant in units of seconds. The median filter will take the median of the
  * samples that occur over a period defined by the time constant... the number
  * of samples that are considered is known as the filter window. The approach
  * allows the filter window to be defined over a period of time, instead of a
