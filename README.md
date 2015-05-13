@@ -68,6 +68,10 @@ Acceleration Explorer implements a mean filter designed to smooth the data point
 
 Acceleration Explorer usees a median filter designed to smooth the data points based on a timeconstant in units of seconds. The median filter will take the median of the samples that occur over a period defined by the time constant... the number of samples that are considered is known as the filter window. The approach allows the filter window to be defined over a period of time, instead of a fixed number of samples.
 
+### Comparing Smoothing Filter Performance
+
+The Noise Activity within Acceleration Explorer will compare the root-mean-sqaured (RMS) average of all three filters and the raw sensor output in real-time. THe RMS is the average variance from the mean of the sensor output. This allows users to quickly configure and compare the performance of different smoothing filters simultaneously. In general, I feel the mean filter offers the best compromise between smoothing and response of the three filters.
+
 Useful Links:
 
 * [Acceleration Explorer Home Page](http://www.kircherelectronics.com/accelerationexplorer/accelerationexplorer)
