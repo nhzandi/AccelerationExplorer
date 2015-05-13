@@ -7,6 +7,15 @@ AccelerationExplorer
 
 Acceleration Explorer is an open source Android application with two different purposes. The first purpose is to provide examples of how to implement the Android acceleration sensor and apply various smoothing and linear acceleration filters. The second purpose is a functioning application allowing teachers, students and hobbyists (who may not be interested in the code) to visualize the acceleration sensor's outputs and how different filters effect the outputs.
 
+## Overiew of Features
+
+Acceleration Explorer has five main Activities. A logger view, a vector view, a tilt view, a noise view and a diagnostic view.  Each Activity provides a different visualization of some aspect of the acceleration sensor. 
+
+### The Logger
+
+![Alt text](http://www.kircherelectronics.com/resources/images/accelerationExplorer/acceleration_explorer_logger.png "Android Acceleration Explorer Screenshot")
+
+
 The acceleration sensor outputs can also be logged to a .CSV file and be opened in any spreedsheet application. This allows the user to record the acceleration of any object the Android device is attached to. Analog gauges of the magnitude of the acceleration and rotation of the device are also displayed to help further visualize the acceleration sensor outputs.
 
 In addition to the plotting and logging capabilities, Acceleration Explorer has a diagnostic mode intended to help the user discover the noise, offset and skew associated with the acceleration sensor. After a quick calibration process, Acceleration Explorer will calculate the magnitude, accuracy and noise of each axis of the sensor. Acceleration Explorer also determines the minimum and maximum amplitudes of each axis along with the update frequency of the acceleration sensor. This can be very useful for developers and other interested parties that need to compare the performance of acceleration devices equipped on different devices. It can also be useful in determining what digital filters and other calibrations might help the acceleration sensor to improve the sensors performance and accuracy.
