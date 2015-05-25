@@ -71,7 +71,6 @@ public class LoggerActivity extends FilterActivity implements Runnable
 
 	// Indicate if the output should be logged to a .csv file
 	private boolean logData = false;
-	private boolean dataReady = false;
 
 	// The generation of the log output
 	private int generation = 0;
@@ -91,9 +90,9 @@ public class LoggerActivity extends FilterActivity implements Runnable
 	private PlotColor color;
 
 	// Acceleration plot titles
-	private String plotAccelXAxisTitle = "AX";
-	private String plotAccelYAxisTitle = "AY";
-	private String plotAccelZAxisTitle = "AZ";
+	private String plotAccelXAxisTitle = "Azimuth";
+	private String plotAccelYAxisTitle = "Pitch";
+	private String plotAccelZAxisTitle = "Roll";
 
 	// Output log
 	private String log;
@@ -135,7 +134,6 @@ public class LoggerActivity extends FilterActivity implements Runnable
 
 		stopDataLog();
 	}
-
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
@@ -276,7 +274,7 @@ public class LoggerActivity extends FilterActivity implements Runnable
 	 */
 	private void logData()
 	{
-		if (logData && dataReady)
+		if (logData)
 		{
 			if (generation == 0)
 			{

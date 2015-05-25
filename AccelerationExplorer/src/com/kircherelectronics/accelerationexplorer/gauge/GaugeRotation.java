@@ -233,9 +233,6 @@ public final class GaugeRotation extends View
 				+ rimOuterSize, rimRect.right - rimOuterSize, rimRect.bottom
 				- rimOuterSize);
 
-		// still a work in progress changing the rimOuterSize will not
-		// dynamically
-		// change the small rectangles to the appropriate size.
 		rimTopRect = new RectF(0.5f, 0.106f, 0.5f, 0.06f);
 		rimTopRect.set(rimTopRect.left + rimOuterSize, rimTopRect.top
 				+ rimOuterSize, rimTopRect.right - rimOuterSize,

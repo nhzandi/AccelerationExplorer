@@ -65,7 +65,7 @@ public abstract class FilterActivity extends Activity implements
 	protected boolean imuLaCfQuaternionEnabled;
 	protected boolean imuLaKfQuaternionEnabled;
 
-	private boolean dataReady = false;
+	protected boolean dataReady = false;
 
 	// Outputs for the acceleration and LPFs
 	protected float[] acceleration = new float[3];
@@ -194,6 +194,9 @@ public abstract class FilterActivity extends Activity implements
 			{
 				imuLinearAcceleration.setAcceleration(acceleration);
 			}
+			
+			
+			dataReady = true;
 		}
 
 		if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)
@@ -219,6 +222,9 @@ public abstract class FilterActivity extends Activity implements
 				linearAcceleration = lpfAccelSmoothing
 						.addSamples(linearAcceleration);
 			}
+			
+			
+			dataReady = true;
 		}
 
 		if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
@@ -278,8 +284,6 @@ public abstract class FilterActivity extends Activity implements
 						.getLinearAcceleration();
 			}
 		}
-
-		dataReady = true;
 	}
 
 	private void initFilters()
