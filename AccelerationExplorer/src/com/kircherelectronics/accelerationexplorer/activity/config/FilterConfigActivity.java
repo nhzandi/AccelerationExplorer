@@ -46,6 +46,8 @@ public class FilterConfigActivity extends PreferenceActivity implements
 	private static final String tag = FilterConfigActivity.class
 			.getSimpleName();
 
+	public static final String AXIS_INVERSION_ENABLED_KEY = "axis_inversion_enabled_preference";
+	
 	// Preference keys for smoothing filters
 	public static final String MEAN_FILTER_SMOOTHING_ENABLED_KEY = "mean_filter_smoothing_enabled_preference";
 	public static final String MEAN_FILTER_SMOOTHING_TIME_CONSTANT_KEY = "mean_filter_smoothing_time_constant_preference";

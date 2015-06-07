@@ -53,6 +53,8 @@ import com.kircherelectronics.accelerationexplorer.prefs.PrefUtils;
 public abstract class FilterActivity extends Activity implements
 		SensorEventListener
 {
+	protected boolean axisInverted = false;
+	
 	protected boolean meanFilterSmoothingEnabled;
 	protected boolean medianFilterSmoothingEnabled;
 	protected boolean lpfSmoothingEnabled;
@@ -145,6 +147,7 @@ public abstract class FilterActivity extends Activity implements
 		super.onResume();
 
 		initFilters();
+		getAxisPrefs();
 		getSensorFrequencyPrefs();
 		updateSensorDelay();
 
@@ -165,6 +168,13 @@ public abstract class FilterActivity extends Activity implements
 			// Get a local copy of the sensor values
 			System.arraycopy(event.values, 0, acceleration, 0,
 					event.values.length);
+			
+			if(axisInverted)
+			{
+				acceleration[0] = -acceleration[0];
+				acceleration[1] = -acceleration[1];
+				acceleration[2] = -acceleration[2];
+			}
 
 			if (meanFilterSmoothingEnabled)
 			{
@@ -204,6 +214,13 @@ public abstract class FilterActivity extends Activity implements
 			// Get a local copy of the sensor values
 			System.arraycopy(event.values, 0, linearAcceleration, 0,
 					event.values.length);
+			
+			if(axisInverted)
+			{
+				linearAcceleration[0] = -linearAcceleration[0];
+				linearAcceleration[1] = -linearAcceleration[1];
+				linearAcceleration[2] = -linearAcceleration[2];
+			}
 
 			if (meanFilterSmoothingEnabled)
 			{
@@ -497,6 +514,12 @@ public abstract class FilterActivity extends Activity implements
 		return Float.valueOf(prefs.getString(
 				FilterConfigActivity.MEDIAN_FILTER_SMOOTHING_TIME_CONSTANT_KEY,
 				"0.5"));
+	}
+	
+	private void getAxisPrefs()
+	{
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		axisInverted = prefs.getBoolean(FilterConfigActivity.AXIS_INVERSION_ENABLED_KEY, false);
 	}
 
 	/**
