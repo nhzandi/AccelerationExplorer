@@ -142,6 +142,33 @@
                             android:textAppearance="?android:attr/textAppearanceMedium"
                             android:textColor="#fff" />
                     </RelativeLayout>
+                    
+                    <RelativeLayout
+                        android:layout_width="fill_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="20dp"
+                        android:layout_weight="1" >
+
+                        <TextView
+                            android:id="@+id/label_hz_frequency"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentLeft="true"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Hz:"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#fff" />
+
+                        <TextView
+                            android:id="@+id/value_hz_frequency"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_toRightOf="@+id/label_hz_frequency"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="0.00"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="#fff" />
+                    </RelativeLayout>
                 </TableRow>
             </TableLayout>
         </RelativeLayout>
@@ -154,6 +181,7 @@
 
     <com.androidplot.xy.XYPlot
         android:id="@+id/plot_sensor"
+        androidplot.renderMode="use_background_thread"
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_marginLeft="10dp"

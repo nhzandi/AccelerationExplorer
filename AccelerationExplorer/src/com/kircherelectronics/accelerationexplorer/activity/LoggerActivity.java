@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 import android.app.Dialog;
 import android.content.Intent;
@@ -83,6 +86,8 @@ public class LoggerActivity extends FilterActivity implements Runnable
 	// Log output time stamp
 	private long logTime = 0;
 
+	private DecimalFormat df;
+
 	// Graph plot for the UI outputs
 	private DynamicLinePlot dynamicPlot;
 
@@ -90,9 +95,10 @@ public class LoggerActivity extends FilterActivity implements Runnable
 	private PlotColor color;
 
 	// Acceleration plot titles
-	private String plotAccelXAxisTitle = "Azimuth";
-	private String plotAccelYAxisTitle = "Pitch";
-	private String plotAccelZAxisTitle = "Roll";
+	private String plotAccelXAxisTitle = "X-Axis";
+	private String plotAccelYAxisTitle = "Y-Axis";
+	private String plotAccelZAxisTitle = "Z-Axis";
+	private String plotSensorFrequencyTitle = "Frequency";
 
 	// Output log
 	private String log;
@@ -109,6 +115,11 @@ public class LoggerActivity extends FilterActivity implements Runnable
 		textViewXAxis = (TextView) findViewById(R.id.value_x_axis);
 		textViewYAxis = (TextView) findViewById(R.id.value_y_axis);
 		textViewZAxis = (TextView) findViewById(R.id.value_z_axis);
+		textViewHzFrequency = (TextView) findViewById(R.id.value_hz_frequency);
+
+		NumberFormat nf = NumberFormat.getNumberInstance(Locale.getDefault());
+		df = (DecimalFormat) nf;
+		df.applyPattern("###.####");
 
 		initColor();
 		initPlots();
@@ -119,7 +130,7 @@ public class LoggerActivity extends FilterActivity implements Runnable
 			@Override
 			public void run()
 			{
-				handler.postDelayed(this, 100);
+				handler.postDelayed(this, 10);
 
 				updateAccelerationText();
 				plotData();
@@ -227,10 +238,9 @@ public class LoggerActivity extends FilterActivity implements Runnable
 	 */
 	private void initPlots()
 	{
-		View view = findViewById(R.id.acceleration_plot_layout);
-
 		// Create the graph plot
 		XYPlot plot = (XYPlot) findViewById(R.id.plot_sensor);
+
 		plot.setTitle("Acceleration");
 		dynamicPlot = new DynamicLinePlot(plot, this);
 		dynamicPlot.setMaxRange(20);
@@ -274,7 +284,7 @@ public class LoggerActivity extends FilterActivity implements Runnable
 	 */
 	private void logData()
 	{
-		if (logData)
+		if (logData && dataReady)
 		{
 			if (generation == 0)
 			{
@@ -283,24 +293,27 @@ public class LoggerActivity extends FilterActivity implements Runnable
 
 			log += generation++ + ",";
 
-			log += String.format("%.2f",
-					(System.currentTimeMillis() - logTime) / 1000.0f) + ",";
+			float timestamp = (System.currentTimeMillis() - logTime) / 1000.0f;
+			
+			log += df.format(timestamp) + ",";
 
 			if (!lpfLinearAccelEnabled && !imuLaCfOrienationEnabled
 					&& !imuLaCfRotationMatrixEnabled
 					&& !imuLaCfQuaternionEnabled && !androidLinearAccelEnabled
 					&& !imuLaKfQuaternionEnabled)
 			{
-				log += acceleration[0] + ",";
-				log += acceleration[1] + ",";
-				log += acceleration[2] + ",";
+				log += df.format(acceleration[0]) + ",";
+				log += df.format(acceleration[1]) + ",";
+				log += df.format(acceleration[2]) + ",";
 			}
 			else
 			{
-				log += linearAcceleration[0] + ",";
-				log += linearAcceleration[1] + ",";
-				log += linearAcceleration[2] + ",";
+				log += df.format(linearAcceleration[0]) + ",";
+				log += df.format(linearAcceleration[1]) + ",";
+				log += df.format(linearAcceleration[2]) + ",";
 			}
+
+			log += df.format(hz) + ",";
 
 			log += System.getProperty("line.separator");
 
@@ -392,6 +405,8 @@ public class LoggerActivity extends FilterActivity implements Runnable
 			headers += this.plotAccelYAxisTitle + ",";
 
 			headers += this.plotAccelZAxisTitle + ",";
+
+			headers += this.plotSensorFrequencyTitle + ",";
 
 			log = headers;
 

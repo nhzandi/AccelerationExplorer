@@ -51,7 +51,7 @@ public class DynamicLinePlot
 	private static final int VERTEX_WIDTH = 4;
 	private static final int LINE_WIDTH = 4;
 
-	private int windowSize = 50;
+	private int windowSize = 200;
 
 	private double maxRange = 10;
 	private double minRange = -10;

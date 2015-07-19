@@ -10,7 +10,14 @@
             android:summaryOn="Inversion is On"
             android:title="Invert Axis" />
     </PreferenceCategory>
-    
+    <PreferenceCategory android:title="Frequency" >
+        <ListPreference
+            android:title="Sensor Frequency"
+            android:key="sensor_frequency_preference"
+            android:defaultValue="2"
+            android:entries="@array/frequency"
+            android:entryValues="@array/frequencyValues" />
+    </PreferenceCategory>
     <PreferenceCategory android:title="Mean Filter Smoothing" >
         <SwitchPreference
             android:defaultValue="false"
@@ -28,8 +35,7 @@
             android:key="mean_filter_smoothing_time_constant_preference"
             android:title="Set Mean Filter Time Constant" />
     </PreferenceCategory>
-    
-      <PreferenceCategory android:title="Median Filter Smoothing" >
+    <PreferenceCategory android:title="Median Filter Smoothing" >
         <SwitchPreference
             android:defaultValue="false"
             android:dialogTitle="Enable Median Filter"

@@ -20,9 +20,8 @@ package com.kircherelectronics.accelerationexplorer.prefs;
 
 public class PrefUtils
 {
-	public final static String SENSOR_PREFS = "sensor_prefs";
-	public final static String SENSOR_FREQUENCY_PREF = "sensor_frequency";
-	public final static String SENSOR_FREQUENCY_SLOW = "Slow";
-	public final static String SENSOR_FREQUENCY_MEDIUM = "Medium";
-	public final static String SENSOR_FREQUENCY_FAST = "Fast";
+	public final static String SENSOR_FREQUENCY_PREF = "sensor_frequency_preference";
+	public final static String SENSOR_FREQUENCY_SLOW = "0";
+	public final static String SENSOR_FREQUENCY_MEDIUM = "1";
+	public final static String SENSOR_FREQUENCY_FAST = "2";
 }

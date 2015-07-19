@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.kircherelectronics.accelerationexplorer.activity.config.FilterConfigActivity;
@@ -53,8 +54,10 @@ import com.kircherelectronics.accelerationexplorer.prefs.PrefUtils;
 public abstract class FilterActivity extends Activity implements
 		SensorEventListener
 {
-	protected boolean axisInverted = false;
+	private final static String tag = FilterActivity.class.getSimpleName();
 	
+	protected boolean axisInverted = false;
+
 	protected boolean meanFilterSmoothingEnabled;
 	protected boolean medianFilterSmoothingEnabled;
 	protected boolean lpfSmoothingEnabled;
@@ -67,11 +70,17 @@ public abstract class FilterActivity extends Activity implements
 	protected boolean imuLaCfQuaternionEnabled;
 	protected boolean imuLaKfQuaternionEnabled;
 
-	protected boolean dataReady = false;
+	protected volatile boolean dataReady = false;
+
+	private int count = 0;
+
+	private float startTime = 0;
+	private float timestamp = 0;
+	protected float hz = 0;
 
 	// Outputs for the acceleration and LPFs
-	protected float[] acceleration = new float[3];
-	protected float[] linearAcceleration = new float[3];
+	protected volatile float[] acceleration = new float[3];
+	protected volatile float[] linearAcceleration = new float[3];
 	protected float[] magnetic = new float[3];
 	protected float[] rotation = new float[3];
 
@@ -99,12 +108,13 @@ public abstract class FilterActivity extends Activity implements
 	// Sensor manager to access the accelerometer sensor
 	protected SensorManager sensorManager;
 
-	protected String frequencySelection;
+	protected int frequencySelection;
 
 	// Text views for real-time output
 	protected TextView textViewXAxis;
 	protected TextView textViewYAxis;
 	protected TextView textViewZAxis;
+	protected TextView textViewHzFrequency;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -146,9 +156,9 @@ public abstract class FilterActivity extends Activity implements
 	{
 		super.onResume();
 
+		resetSensorFrequencyTimer();
 		initFilters();
 		getAxisPrefs();
-		getSensorFrequencyPrefs();
 		updateSensorDelay();
 
 		handler.post(runable);
@@ -161,15 +171,23 @@ public abstract class FilterActivity extends Activity implements
 	}
 
 	@Override
-	public void onSensorChanged(SensorEvent event)
+	public synchronized void onSensorChanged(SensorEvent event)
 	{
+		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER
+				|| event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)
+		{
+			calculateSensorFrequency();
+			
+			dataReady = true;
+		}
+
 		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
 		{
 			// Get a local copy of the sensor values
 			System.arraycopy(event.values, 0, acceleration, 0,
 					event.values.length);
-			
-			if(axisInverted)
+
+			if (axisInverted)
 			{
 				acceleration[0] = -acceleration[0];
 				acceleration[1] = -acceleration[1];
@@ -204,9 +222,6 @@ public abstract class FilterActivity extends Activity implements
 			{
 				imuLinearAcceleration.setAcceleration(acceleration);
 			}
-			
-			
-			dataReady = true;
 		}
 
 		if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)
@@ -214,8 +229,8 @@ public abstract class FilterActivity extends Activity implements
 			// Get a local copy of the sensor values
 			System.arraycopy(event.values, 0, linearAcceleration, 0,
 					event.values.length);
-			
-			if(axisInverted)
+
+			if (axisInverted)
 			{
 				linearAcceleration[0] = -linearAcceleration[0];
 				linearAcceleration[1] = -linearAcceleration[1];
@@ -239,9 +254,6 @@ public abstract class FilterActivity extends Activity implements
 				linearAcceleration = lpfAccelSmoothing
 						.addSamples(linearAcceleration);
 			}
-			
-			
-			dataReady = true;
 		}
 
 		if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
@@ -515,11 +527,13 @@ public abstract class FilterActivity extends Activity implements
 				FilterConfigActivity.MEDIAN_FILTER_SMOOTHING_TIME_CONSTANT_KEY,
 				"0.5"));
 	}
-	
+
 	private void getAxisPrefs()
 	{
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		axisInverted = prefs.getBoolean(FilterConfigActivity.AXIS_INVERSION_ENABLED_KEY, false);
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		axisInverted = prefs.getBoolean(
+				FilterConfigActivity.AXIS_INVERSION_ENABLED_KEY, false);
 	}
 
 	/**
@@ -527,12 +541,11 @@ public abstract class FilterActivity extends Activity implements
 	 */
 	private void getSensorFrequencyPrefs()
 	{
-		SharedPreferences prefs = this.getSharedPreferences(
-				PrefUtils.SENSOR_PREFS, Activity.MODE_PRIVATE);
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(this);
 
-		this.frequencySelection = prefs.getString(
-				PrefUtils.SENSOR_FREQUENCY_PREF,
-				PrefUtils.SENSOR_FREQUENCY_FAST);
+		this.frequencySelection = Integer.parseInt(prefs.getString(PrefUtils.SENSOR_FREQUENCY_PREF,
+				PrefUtils.SENSOR_FREQUENCY_FAST));
 	}
 
 	/**
@@ -676,6 +689,34 @@ public abstract class FilterActivity extends Activity implements
 			textViewYAxis.setText(String.format("%.2f", linearAcceleration[1]));
 			textViewZAxis.setText(String.format("%.2f", linearAcceleration[2]));
 		}
+		
+		textViewHzFrequency.setText(String.format("%.2f", hz));
+	}
+
+	private void calculateSensorFrequency()
+	{
+		// Initialize the start time.
+		if (startTime == 0)
+		{
+			startTime = System.nanoTime();
+		}
+
+		timestamp = System.nanoTime();
+
+		// Find the sample period (between updates) and convert from
+		// nanoseconds to seconds. Note that the sensor delivery rates can
+		// individually vary by a relatively large time frame, so we use an
+		// averaging technique with the number of sensor updates to
+		// determine the delivery rate.
+		hz = (count++ / ((timestamp - startTime) / 1000000000.0f));
+	}
+
+	private void resetSensorFrequencyTimer()
+	{
+		count = 0;
+		startTime = 0;
+		timestamp = 0;
+		hz = 0;
 	}
 
 	/**
@@ -684,19 +725,8 @@ public abstract class FilterActivity extends Activity implements
 	 */
 	private void updateSensorDelay()
 	{
-		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_SLOW))
-		{
-			setSensorDelay(0);
-		}
+		getSensorFrequencyPrefs();
 
-		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_MEDIUM))
-		{
-			setSensorDelay(1);
-		}
-
-		if (frequencySelection.equals(PrefUtils.SENSOR_FREQUENCY_FAST))
-		{
-			setSensorDelay(2);
-		}
+		setSensorDelay(frequencySelection);
 	}
 }
