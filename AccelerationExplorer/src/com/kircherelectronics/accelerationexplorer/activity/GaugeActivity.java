@@ -73,6 +73,7 @@ public class GaugeActivity extends FilterActivity
 		textViewXAxis = (TextView) findViewById(R.id.value_x_axis);
 		textViewYAxis = (TextView) findViewById(R.id.value_y_axis);
 		textViewZAxis = (TextView) findViewById(R.id.value_z_axis);
+		textViewHzFrequency = (TextView) findViewById(R.id.value_hz_frequency);
 
 		gaugeAcceleration = (GaugeAcceleration) findViewById(R.id.gauge_acceleration);
 		gaugeRotation = (GaugeRotation) findViewById(R.id.gauge_rotation);

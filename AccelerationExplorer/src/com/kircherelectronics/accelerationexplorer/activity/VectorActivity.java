@@ -51,6 +51,7 @@ public class VectorActivity extends FilterActivity
 		textViewXAxis = (TextView) findViewById(R.id.value_x_axis);
 		textViewYAxis = (TextView) findViewById(R.id.value_y_axis);
 		textViewZAxis = (TextView) findViewById(R.id.value_z_axis);
+		textViewHzFrequency = (TextView) findViewById(R.id.value_hz_frequency);
 
 		view = (AccelerationVectorView) findViewById(R.id.vector_acceleration);
 
