@@ -25,6 +25,14 @@ import com.kircherelectronics.accelerationexplorer.filter.MeanFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.filter.MedianFilterSmoothing;
 import com.kircherelectronics.accelerationexplorer.prefs.PrefUtils;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
 /*
  * Acceleration Explorer
  * Copyright (C) 2013-2015, Kaleb Kircher - Kircher Engineering, LLC
@@ -116,6 +124,11 @@ public abstract class FilterActivity extends Activity implements
 	protected TextView textViewZAxis;
 	protected TextView textViewHzFrequency;
 
+	private Socket socket;
+
+	private static final int SERVERPORT = 5000;
+	private static final String SERVER_IP = "192.168.1.4";
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -139,6 +152,9 @@ public abstract class FilterActivity extends Activity implements
 				.getSystemService(Context.SENSOR_SERVICE);
 
 		handler = new Handler();
+
+		new Thread(new SocketClientThread()).start();
+
 	}
 
 	@Override
@@ -681,6 +697,25 @@ public abstract class FilterActivity extends Activity implements
 			textViewXAxis.setText(String.format("%.2f", acceleration[0]));
 			textViewYAxis.setText(String.format("%.2f", acceleration[1]));
 			textViewZAxis.setText(String.format("%.2f", acceleration[2]));
+
+			try {
+
+				String str =  "s" + Float.toString(acceleration[0])
+							+ "x" + Float.toString(acceleration[1])
+							+ "y" + Float.toString(acceleration[2])
+							+ "z" + Float.toString(hz)
+							+ "a";
+				PrintWriter out = new PrintWriter(new BufferedWriter(
+						new OutputStreamWriter(socket.getOutputStream())),
+						true);
+				out.println(str);
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		else
 		{
@@ -688,6 +723,24 @@ public abstract class FilterActivity extends Activity implements
 			textViewXAxis.setText(String.format("%.2f", linearAcceleration[0]));
 			textViewYAxis.setText(String.format("%.2f", linearAcceleration[1]));
 			textViewZAxis.setText(String.format("%.2f", linearAcceleration[2]));
+
+			try {
+				String str =  "s" + Float.toString(linearAcceleration[0])
+							+ "x" + Float.toString(linearAcceleration[1])
+							+ "y" + Float.toString(linearAcceleration[2])
+							+ "z" + Float.toString(hz)
+							+ "a";
+				PrintWriter out = new PrintWriter(new BufferedWriter(
+						new OutputStreamWriter(socket.getOutputStream())),
+						true);
+				out.println(str);
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		
 		textViewHzFrequency.setText(String.format("%.2f", hz));
@@ -728,5 +781,18 @@ public abstract class FilterActivity extends Activity implements
 		getSensorFrequencyPrefs();
 
 		setSensorDelay(frequencySelection);
+	}
+
+	class SocketClientThread implements Runnable {
+		@Override
+		public void run(){
+			try{
+				InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+				socket = new Socket(serverAddr, SERVERPORT);
+
+			}catch (Exception e){
+
+			}
+		}
 	}
 }
