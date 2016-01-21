@@ -19,6 +19,8 @@
     <string name="default_value">0.000</string>
     <string name="default_value_mean_filter">1.0</string>
     <string name="default_value_low_pass_filter">0.5</string>
+    <string name="default_server_ip">192.168.1.4</string>
+    <string name="default_server_port">5000</string>
     <string name="x_axis_label">X-Axis</string>
     <string name="max_label">Max:</string>
     <string name="max_amp_label">Max Amp:</string>

@@ -358,15 +358,16 @@ public class ImuLaCfOrientation implements ImuLinearAccelerationInterface
 		float oneMinusCoeff = (1.0f - filterCoefficient);
 
 		/*
-		 * Fix for 179° <--> -179° transition problem: Check whether one of the
+		 * Fix for 179ï¿½ <--> -179ï¿½ transition problem: Check whether one of the
 		 * two orientation angles (gyro or accMag) is negative while the other
-		 * one is positive. If so, add 360° (2 * math.PI) to the negative value,
-		 * perform the sensor fusion, and remove the 360° from the result if it
-		 * is greater than 180°. This stabilizes the output in
+		 * one is positive. If so, add 360ï¿½ (2 * math.PI) to the negative value,
+		 * perform the sensor fusion, and remove the 360ï¿½ from the result if it
+		 * is greater than 180ï¿½. This stabilizes the output in
 		 * positive-to-negative-transition cases.
 		 */
 
 		// azimuth
+		/*
 		if (gyroOrientation[0] < -0.5 * Math.PI && orientation[0] > 0.0)
 		{
 			fusedOrientation[0] = (float) (filterCoefficient
@@ -387,7 +388,8 @@ public class ImuLaCfOrientation implements ImuLinearAccelerationInterface
 		{
 			fusedOrientation[0] = filterCoefficient * gyroOrientation[0]
 					+ oneMinusCoeff * orientation[0];
-		}
+		}*/
+		fusedOrientation[0] = 0;
 
 		// pitch
 		if (gyroOrientation[1] < -0.5 * Math.PI && orientation[1] > 0.0)

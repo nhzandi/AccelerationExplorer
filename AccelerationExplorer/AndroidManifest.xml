@@ -56,6 +56,10 @@
             android:name="com.kircherelectronics.accelerationexplorer.activity.config.NoiseConfigActivity"
             android:screenOrientation="portrait" >
         </activity>
+        <activity
+            android:name="com.kircherelectronics.accelerationexplorer.activity.config.ServerConfigActivity"
+            android:screenOrientation="portrait" >
+        </activity>
     </application>
 
 </manifest>

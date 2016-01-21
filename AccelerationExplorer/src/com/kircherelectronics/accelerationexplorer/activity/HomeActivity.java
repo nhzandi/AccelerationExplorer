@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.kircherelectronics.accelerationexplorer.R;
+import com.kircherelectronics.accelerationexplorer.activity.config.ServerConfigActivity;
 import com.kircherelectronics.accelerationexplorer.filter.MeanFilterSmoothing;
 
 /*
@@ -127,6 +128,10 @@ public class HomeActivity extends Activity implements SensorEventListener
 		// Start the vector activity
 		case R.id.action_help:
 			showHelpDialog();
+			return true;
+
+		case R.id.action_server:
+			showServerDialog();
 			return true;
 
 		default:
@@ -278,4 +283,12 @@ public class HomeActivity extends Activity implements SensorEventListener
 		textViewYAxis.setText(String.format("%.2f", acceleration[1]));
 		textViewZAxis.setText(String.format("%.2f", acceleration[2]));
 	}
+
+	private void showServerDialog(){
+		Intent intent = new Intent(HomeActivity.this,
+				ServerConfigActivity.class);
+		startActivity(intent);
+	}
+
+
 }

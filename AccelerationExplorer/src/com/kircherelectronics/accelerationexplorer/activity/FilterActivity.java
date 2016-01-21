@@ -14,6 +14,7 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.kircherelectronics.accelerationexplorer.activity.config.FilterConfigActivity;
+import com.kircherelectronics.accelerationexplorer.activity.config.ServerConfigActivity;
 import com.kircherelectronics.accelerationexplorer.filter.ImuLaCfOrientation;
 import com.kircherelectronics.accelerationexplorer.filter.ImuLaCfQuaternion;
 import com.kircherelectronics.accelerationexplorer.filter.ImuLaCfRotationMatrix;
@@ -92,6 +93,10 @@ public abstract class FilterActivity extends Activity implements
 	protected float[] magnetic = new float[3];
 	protected float[] rotation = new float[3];
 
+	protected volatile float[] integrationX = new float[3];
+	protected volatile float[] integrationV = new float[3];
+	protected volatile float deltaT;
+
 	// Handler for the UI plots so everything plots smoothly
 	protected Handler handler;
 
@@ -126,8 +131,8 @@ public abstract class FilterActivity extends Activity implements
 
 	private Socket socket;
 
-	private static final int SERVERPORT = 5000;
-	private static final String SERVER_IP = "192.168.1.4";
+	private static final int SERVERPORT = 5002;
+	private static final String SERVER_IP = "192.168.1.6";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -165,6 +170,12 @@ public abstract class FilterActivity extends Activity implements
 		sensorManager.unregisterListener(this);
 
 		handler.removeCallbacks(runable);
+
+		try{
+			socket.close();
+		}catch (Exception e){
+
+		}
 	}
 
 	@Override
@@ -178,6 +189,7 @@ public abstract class FilterActivity extends Activity implements
 		updateSensorDelay();
 
 		handler.post(runable);
+		new Thread(new SocketClientThread()).start();
 	}
 
 	@Override
@@ -701,10 +713,10 @@ public abstract class FilterActivity extends Activity implements
 			try {
 
 				String str =  "s" + Float.toString(acceleration[0])
-							+ "x" + Float.toString(acceleration[1])
-							+ "y" + Float.toString(acceleration[2])
-							+ "z" + Float.toString(hz)
-							+ "a";
+							+ "," + Float.toString(acceleration[1])
+							+ "[" + Float.toString(acceleration[2])
+							+ "]" + Float.toString(hz)
+							+ "/";
 				PrintWriter out = new PrintWriter(new BufferedWriter(
 						new OutputStreamWriter(socket.getOutputStream())),
 						true);
@@ -725,11 +737,13 @@ public abstract class FilterActivity extends Activity implements
 			textViewZAxis.setText(String.format("%.2f", linearAcceleration[2]));
 
 			try {
+
+
 				String str =  "s" + Float.toString(linearAcceleration[0])
-							+ "x" + Float.toString(linearAcceleration[1])
-							+ "y" + Float.toString(linearAcceleration[2])
-							+ "z" + Float.toString(hz)
-							+ "a";
+							+ "," + Float.toString(linearAcceleration[1])
+							+ "[" + Float.toString(linearAcceleration[2])
+							+ "]" + Float.toString(hz)
+							+ "/";
 				PrintWriter out = new PrintWriter(new BufferedWriter(
 						new OutputStreamWriter(socket.getOutputStream())),
 						true);
@@ -783,12 +797,37 @@ public abstract class FilterActivity extends Activity implements
 		setSensorDelay(frequencySelection);
 	}
 
+	private String getPrefServerIP()
+	{
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(getApplicationContext());
+
+		return prefs.getString(
+				ServerConfigActivity.SERVER_IP_CONSTANT_KEY, "192.168.1.4");
+
+
+	}
+
+	private int getPrefServerPort()
+	{
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(getApplicationContext());
+
+		return Integer.valueOf(prefs.getString(
+				ServerConfigActivity.SERVER_PORT_CONSTANT_KEY, "5000"));
+
+	}
+
 	class SocketClientThread implements Runnable {
 		@Override
 		public void run(){
 			try{
-				InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
-				socket = new Socket(serverAddr, SERVERPORT);
+//				InetAddress serverAddr = InetAddress.getByName(getPrefServerIP());
+//				socket = new Socket(serverAddr, getPrefServerPort());
+
+				InetAddress serverAddr = InetAddress.getByName(getPrefServerIP());
+				socket = new Socket(serverAddr, getPrefServerPort());
+
 
 			}catch (Exception e){
 

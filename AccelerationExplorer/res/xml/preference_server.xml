@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="Server IP Address" >
+        <EditTextPreference
+            android:defaultValue="@string/default_server_ip"
+            android:dialogMessage="Enter the Server IP Address(xx.xx.xx.xx)"
+            android:dialogTitle="IP Address"
+            android:inputType="text"
+            android:key="server_ip"
+            android:title="Set Server IP" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Server Port Number" >
+        <EditTextPreference
+            android:defaultValue="@string/default_server_port"
+            android:dialogMessage="Enter server port number"
+            android:dialogTitle="Port Number"
+            android:inputType="numberDecimal"
+            android:key="server_port"
+            android:title="Set Server Port" />
+    </PreferenceCategory>
+</PreferenceScreen>
